@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/favicon-512.png" sizes="512x512">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#16606E">
+<title>Takewrite — Synchronbücher am Bild schreiben</title>
+<meta name="description" content="Film, Timecode und Buch in einem Fenster. Takewrite schreibt Synchronbücher direkt am laufenden Bild — kein Abtippen von Timecodes, kein Fensterwechsel, kein Nacharbeiten am Format.">
+
+<!-- Vorschau beim Teilen: Bild, Titel und Beschreibung stehen im
+     Vorschaufenster von WhatsApp, Signal, LinkedIn und Facebook. Die
+     Bildadresse muss vollstaendig sein — die Dienste holen sie von aussen. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Takewrite">
+<meta property="og:locale" content="de_DE">
+<meta property="og:url" content="https://takewrite.de/">
+<meta property="og:title" content="Takewrite — Synchronbücher am Bild schreiben">
+<meta property="og:description" content="Film, Timecode und Buch in einem Fenster. Takewrite schreibt Synchronbücher direkt am laufenden Bild — kein Abtippen von Timecodes, kein Fensterwechsel, kein Nacharbeiten am Format.">
+<meta property="og:image" content="https://takewrite.de/vorschau.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Takewrite — Synchronbücher am Bild schreiben">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Takewrite — Synchronbücher am Bild schreiben">
+<meta name="twitter:description" content="Film, Timecode und Buch in einem Fenster. Takewrite schreibt Synchronbücher direkt am laufenden Bild — kein Abtippen von Timecodes, kein Fensterwechsel, kein Nacharbeiten am Format.">
+<meta name="twitter:image" content="https://takewrite.de/vorschau.png">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<style>
+/* ============================================================
+   Takewrite — Landingpage
+   Palette und Typografie aus dem Werkzeug selbst abgeleitet:
+   Studiograu statt Creme, Teal als Signalfarbe, Orange nur dort,
+   wo im Programm auch etwas gesetzt wird.
+   ============================================================ */
+:root{
+  --ground:#ECEEF0; --surface:#FAFBFC; --surface-2:#E1E5E8;
+  --ink:#0E1519; --ink-2:#41505A; --ink-3:#78868F;
+  --rule:#CFD6DA; --rule-soft:#DFE4E7;
+  --accent:#16606E; --accent-soft:#D6E6E9;
+  --warm:#A8481A; --warm-soft:#F2E1D6;
+  --gut:#1E6B4E;
+  --film:#07090B; --film-ink:#E9EEF2; --film-dim:#6F7B85; --film-accent:#72BBC8;
+  --display:"Bahnschrift","DIN Alternate","Franklin Gothic Medium","Helvetica Neue",Arial,sans-serif;
+  --body:"Constantia","Cambria",Georgia,"Times New Roman",serif;
+  --ui:"Segoe UI",Roboto,-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"SF Mono","Roboto Mono",ui-monospace,monospace;
+  --rf-l:36%;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0B0F13; --surface:#141A20; --surface-2:#1C242B;
+    --ink:#E4E9ED; --ink-2:#A5B0B9; --ink-3:#74818B;
+    --rule:#28323A; --rule-soft:#1E262D;
+    --accent:#6FBECD; --accent-soft:#123037;
+    --warm:#DD9159; --warm-soft:#33241A; --gut:#5FC29A; --rf-l:70%;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0B0F13; --surface:#141A20; --surface-2:#1C242B;
+  --ink:#E4E9ED; --ink-2:#A5B0B9; --ink-3:#74818B;
+  --rule:#28323A; --rule-soft:#1E262D;
+  --accent:#6FBECD; --accent-soft:#123037;
+  --warm:#DD9159; --warm-soft:#33241A; --gut:#5FC29A; --rf-l:70%;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
+     font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+
+.wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+.takt{display:grid;grid-template-columns:92px minmax(0,1fr);gap:0 28px;align-items:start}
+.tc{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-3);
+    font-variant-numeric:tabular-nums;padding:.7em 14px 0 0;border-right:1px solid var(--rule);
+    text-align:right;height:100%}
+@media (max-width:820px){
+  .takt{grid-template-columns:1fr;gap:0}
+  .tc{border-right:0;text-align:left;padding:0 0 6px;height:auto}
+}
+
+h1,h2,h3,.eyebrow,.stat b,.preis .zahl,.schritt b{font-family:var(--display)}
+h2{font-size:clamp(28px,3.6vw,42px);line-height:1.06;margin:0 0 .5em;text-wrap:balance;font-weight:600}
+h3{font-size:19px;line-height:1.25;margin:0 0 .35em;font-weight:600}
+p{margin:0 0 1em;max-width:64ch}
+a{color:var(--accent)}
+.eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);
+         margin:0 0 14px;font-weight:600}
+section{padding:76px 0;border-top:1px solid var(--rule)}
+
+header{padding:34px 0 0}
+.marke{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+/* Die Wortmarke statt des getippten Worts. Ueber CSS und nicht ueber <picture>,
+   weil die Seite einen eigenen Hell/Dunkel-Umschalter hat — eine Medienabfrage
+   allein kennt nur die Einstellung des Systems und wuerde ihn uebergehen. */
+.marke .name{display:block;width:136px;height:30px;align-self:center;
+  background:url("wortmarke.png") no-repeat center/contain}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .marke .name{background-image:url("wortmarke-hell.png")}
+}
+:root[data-theme="dark"] .marke .name{background-image:url("wortmarke-hell.png")}
+.marke .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3)}
+
+.hero{padding:56px 0 72px}
+h1{font-size:clamp(40px,6.4vw,78px);line-height:1;letter-spacing:-.005em;margin:0 0 22px;
+   font-weight:600;text-wrap:balance}
+h1 em{font-style:normal;color:var(--accent)}
+.lead{font-size:clamp(19px,2.1vw,23px);line-height:1.5;color:var(--ink-2);max-width:36ch;margin:0 0 30px}
+.herogrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:48px;align-items:center}
+@media (max-width:980px){.herogrid{grid-template-columns:1fr;gap:38px}}
+
+.knopfreihe{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.knopf{display:inline-block;font-family:var(--display);font-size:15px;letter-spacing:.06em;
+  background:var(--accent);color:var(--ground);text-decoration:none;padding:14px 26px;
+  border-radius:2px;border:1px solid var(--accent);transition:filter .15s}
+.knopf:hover{filter:brightness(1.14)}
+.knopf.leer{background:transparent;color:var(--ink);border-color:var(--rule)}
+.knopf.leer:hover{border-color:var(--accent);color:var(--accent);filter:none}
+.kleingedruckt{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.04em;margin:14px 0 0}
+
+/* ---- Ein Fenster: Film und Buch nebeneinander ---- */
+.fenster{border:1px solid var(--rule);border-radius:3px;overflow:hidden;background:var(--surface)}
+.fensterkopf{display:flex;align-items:center;gap:7px;padding:8px 12px;background:var(--surface-2);
+  border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3)}
+.fensterkopf i{width:7px;height:7px;border-radius:50%;background:var(--rule);display:block}
+.fensterkopf i:first-child{background:var(--warm)}
+.zwei{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)}
+@media (max-width:640px){.zwei{grid-template-columns:1fr}}
+.bild{position:relative;background:#06080a;border-right:1px solid var(--rule);
+  display:flex;flex-direction:column}
+.bild img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+.regie{padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+  background:var(--surface);border-top:1px solid var(--rule);margin-top:auto}
+.regie .rt{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--ink-2);
+  background:var(--surface-2);border:1px solid var(--rule);border-radius:2px;padding:4px 8px}
+.regie .rl{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);width:100%;margin-bottom:2px}
+.stanze{position:absolute;top:7%;left:50%;transform:translateX(-50%);background:#000;color:#fff;
+  font-family:var(--mono);font-size:clamp(9px,1.5vw,13px);font-variant-numeric:tabular-nums;
+  padding:.16em .45em;white-space:nowrap}
+
+.zeile{display:grid;grid-template-columns:64px 74px minmax(0,1fr);gap:7px;align-items:start;
+  padding:7px 11px 7px 13px;border-bottom:1px solid var(--rule-soft);font-family:var(--ui)}
+.zeile:last-child{border-bottom:0}
+.zeile.farbe{background:hsl(var(--rf) 72% 50% / .13);box-shadow:inset 3px 0 0 hsl(var(--rf) 62% 46%)}
+.zeile .z{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.zeile .go{flex:0 0 auto;width:17px;height:17px;display:flex;align-items:center;justify-content:center;
+  background:var(--surface-2);border:1px solid var(--rule);border-radius:2px;color:var(--accent);font-size:7px}
+.zeile .num{font-family:var(--mono);font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.zeile.gesetzt .num{color:var(--gut)}
+.zeile .rolle{font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;
+  font-weight:700;color:hsl(var(--rf) 72% var(--rf-l));padding-top:3px}
+.zeile .satz{font-size:13.5px;line-height:1.35;color:var(--ink)}
+.zeile .satz i{font-style:normal;color:var(--warm);font-family:var(--mono);font-size:11px}
+
+/* ---- Gegenüberstellung ---- */
+.gegen{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);
+  border:1px solid var(--rule);margin-top:30px}
+.gegen>div{background:var(--surface);padding:24px 26px}
+.gegen h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  font-weight:400;margin-bottom:14px}
+.gegen .a h3{color:var(--warm)}.gegen .b h3{color:var(--accent)}
+.gegen ul{margin:0;padding-left:1.1em;color:var(--ink-2);font-size:16px}
+.gegen li{margin-bottom:9px}
+.gegen li b{color:var(--ink);font-weight:600}
+@media (max-width:760px){.gegen{grid-template-columns:1fr}}
+
+/* ---- Ablauf ---- */
+.schritte{display:grid;gap:0;margin-top:32px;border-top:1px solid var(--rule)}
+.schritt{display:grid;grid-template-columns:52px minmax(0,1fr);gap:20px;padding:22px 0;
+  border-bottom:1px solid var(--rule)}
+.schritt .n{font-family:var(--mono);font-size:12px;color:var(--accent);font-variant-numeric:tabular-nums;padding-top:4px}
+.schritt b{display:block;font-size:19px;font-weight:600;margin-bottom:4px}
+.schritt span{color:var(--ink-2);font-size:16px}
+
+/* ---- Funktionsraster ---- */
+.raster{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);margin-top:34px}
+.raster>div{background:var(--surface);padding:24px 24px 26px}
+.raster .marke2{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:12px}
+.raster p{font-size:15.5px;color:var(--ink-2);margin:0}
+
+.band{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:28px;margin-top:34px}
+/* Zwei gleichwertige Wege — keiner ist der eigentliche, darum gleich gross. */
+/* Ohne min-width:0 schrumpft ein Rasterelement nie unter die natuerliche
+   Mindestbreite seines Inhalts — ein unumbrechbarer Block darin sprengt dann
+   die ganze Spalte, und die Seite laesst sich seitwaerts wegschieben. */
+.takt > *{min-width:0}
+/* min(240px,100%) statt 240px: Auf einem schmalen Bildschirm darf die
+   Mindestbreite nicht groesser sein als der Platz, der da ist. */
+.wege{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:16px;margin:30px 0 8px}
+.weg{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:20px 22px}
+.weg h3{font-family:var(--display);font-size:18px;margin:0 0 7px;font-weight:600}
+.weg p{margin:0;font-size:15px;color:var(--ink-2)}
+.rezept{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--surface-2);
+  border-left:3px solid var(--accent);border-radius:0 3px 3px 0;padding:15px 18px;
+  margin:14px 0 0;overflow-x:auto;white-space:pre;color:var(--ink-2)}
+.stat b{display:block;font-size:clamp(32px,4.2vw,48px);line-height:1;color:var(--accent);
+  font-variant-numeric:tabular-nums;font-weight:600}
+.stat span{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);margin-top:9px}
+
+.preise{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:22px;margin-top:34px}
+.preis{background:var(--surface);border:1px solid var(--rule);padding:28px 26px;display:flex;
+  flex-direction:column;border-radius:3px}
+.preis.gewaehlt{border-color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
+.preis .art{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:16px}
+.preis .zahl{font-size:44px;line-height:1;font-weight:600;font-variant-numeric:tabular-nums}
+.preis .zahl small{font-size:15px;font-weight:400;color:var(--ink-3);margin-left:5px;font-family:var(--mono)}
+.preis .steuer{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;
+  color:var(--ink-3);margin:5px 0 0}
+.preis .wofuer{font-size:14.5px;color:var(--ink-3);margin:10px 0 20px;font-family:var(--ui)}
+.preis ul{list-style:none;margin:0 0 24px;padding:0;font-size:15.5px;color:var(--ink-2);
+  font-family:var(--ui);flex:1}
+.preis li{padding:7px 0 7px 22px;position:relative;border-bottom:1px solid var(--rule-soft)}
+.preis li:last-child{border-bottom:0}
+.preis li::before{content:"";position:absolute;left:2px;top:15px;width:9px;height:2px;background:var(--accent)}
+
+details{border-bottom:1px solid var(--rule)}
+.fragen{margin-top:30px;border-top:1px solid var(--rule)}
+summary{cursor:pointer;padding:20px 34px 20px 0;font-family:var(--display);font-size:19px;
+  font-weight:600;position:relative;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";position:absolute;right:6px;top:19px;font-family:var(--mono);font-size:19px;color:var(--accent)}
+details[open] summary::after{content:"\2212"}
+details p{padding:0 0 20px;color:var(--ink-2);font-size:16px}
+
+.schluss{background:var(--film);color:var(--film-ink);border-top:1px solid var(--rule);padding:76px 0}
+.schluss h2{color:var(--film-ink)}
+.schluss p{color:var(--film-dim);max-width:52ch}
+.schluss .knopf{background:var(--film-accent);border-color:var(--film-accent);color:#06080a}
+.schluss .knopf.leer{background:transparent;color:var(--film-ink);border-color:#2a343c}
+footer{padding:26px 0 46px;font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;
+  color:var(--ink-3);display:flex;gap:18px;flex-wrap:wrap;border-top:1px solid var(--rule)}
+.notiz{margin-top:26px;padding:16px 18px;background:var(--warm-soft);border-left:3px solid var(--warm);
+  font-size:15px;color:var(--ink-2);font-family:var(--ui)}
+.notiz b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <div class="marke">
+    <span class="name" role="img" aria-label="Takewrite"></span>
+    <span class="sub">Synchronbücher am Bild schreiben</span>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="herogrid">
+    <div>
+      <p class="eyebrow">Für Synchronautoren und Rohübersetzer</p>
+      <h1>Du siehst den Film. <em>Das Buch entsteht mit.</em></h1>
+      <p class="lead">Schreiben, ohne den Film zu verlassen. Rolle, Einsatz und
+        Regieangabe genau dort, wo du gerade bist.</p>
+      <div class="knopfreihe">
+        <a class="knopf" href="#preise">Demo — gratis</a>
+        <a class="knopf leer" href="#ablauf">In vier Schritten</a>
+      </div>
+      <p class="kleingedruckt">Läuft im Browser · Der Film bleibt auf deinem Rechner</p>
+    </div>
+
+    <div class="fenster">
+      <div class="fensterkopf"><i></i><i></i><i></i><span style="margin-left:6px">Ein Fenster</span></div>
+      <div class="zwei">
+        <div class="bild">
+          <img src="hero_film.jpg" alt="Filmbild mit eingestanztem Timecode">
+          <div class="stanze" id="stanze">00:12:46:08</div>
+          <div class="regie">
+            <span class="rl">Regieangaben per Schnelltasten integrieren</span>
+            <span class="rt">(.)</span><span class="rt">(..)</span><span class="rt">(&hellip;)</span>
+            <span class="rt">(ON)</span><span class="rt">(OFF)</span><span class="rt">(CONT)</span>
+            <span class="rt">(ATMER)</span><span class="rt">(LAUTE)</span><span class="rt">(LACHT)</span>
+          </div>
+        </div>
+        <div>
+          <div class="zeile farbe gesetzt" style="--rf:160">
+            <span class="z"><span class="go">&#9654;</span><span class="num">00:12:46</span></span>
+            <span class="rolle">Mara</span>
+            <span class="satz">Hörst du das auch?</span>
+          </div>
+          <div class="zeile farbe gesetzt" style="--rf:214">
+            <span class="z"><span class="go">&#9654;</span><span class="num">00:12:48</span></span>
+            <span class="rolle">Jonas</span>
+            <span class="satz"><i>(OFF)</i> Nur der Wind. Mach dir keinen Kopf.</span>
+          </div>
+          <div class="zeile farbe" style="--rf:160">
+            <span class="z"><span class="go">&#9654;</span><span class="num">00:12:49</span></span>
+            <span class="rolle">Mara</span>
+            <span class="satz">Da war jemand am Steg. <i>(..)</i> Ich hab es genau gesehen.</span>
+          </div>
+          <div class="zeile farbe gesetzt" style="--rf:214">
+            <span class="z"><span class="go">&#9654;</span><span class="num">00:12:53</span></span>
+            <span class="rolle">Jonas</span>
+            <span class="satz">Dann sehen wir eben nach. <i>(.)</i> <i>(ATMER)</i> Zusammen.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<section id="ablauf">
+<div class="wrap"><div class="takt">
+  <div class="tc">01</div>
+  <div>
+    <p class="eyebrow">Der Ablauf</p>
+    <h2>Timecodes direkt vom Film ins Buch.</h2>
+    <p>Du bleibst im Film und schreibst nebenher. Kein Programmwechsel,
+      kein Suchen, kein Abtippen von Zahlen.</p>
+
+    <div class="schritte">
+      <div class="schritt"><span class="n">01</span>
+        <span><b>Hinfahren</b>Sekunden- und bildweise zur richtigen Stelle — mit Tasten
+          oder per Klick aufs Bild.</span></div>
+      <div class="schritt"><span class="n">02</span>
+        <span><b>Zuweisen</b>Ein Klick, und der Take übernimmt den Timecode der Stelle.
+          Fehlt ein Take, legt eine Taste ihn genau dort an.</span></div>
+      <div class="schritt"><span class="n">03</span>
+        <span><b>Besetzen</b>Rollennamen vergeben — das Rollenmenü lernt mit und legt die
+          wahrscheinlichste Figur direkt unter die Hand. Ein Name lässt sich in einer
+          Zeile ändern oder, mit einem Klick, im ganzen Buch.</span></div>
+      <div class="schritt"><span class="n">04</span>
+        <span><b>Ausformulieren</b>Regieanweisungen — (ON), (OFF), (CONT), Pausen, Atmer —
+          liegen als Schnelltasten auf der Tastatur und in einer Leiste über dem
+          Textfeld. In Sekunden eingefügt, mit Leerzeichen, ohne Nachtippen.</span></div>
+    </div>
+
+    <div class="notiz">
+      <b>Am Ende steht kein Rohbuch, sondern das Buch.</b> Export als DOCX und PDF,
+      dazu die Separierung nach Rollen — in einer sauberen Buchvorlage, Titelblatt,
+      Spaltenbreiten und Zeilenhöhen aufs Zeichen genau. Euer Studio hat ein eigenes
+      Format? Schickt uns die Word-Vorlage, wir richten sie ein.
+    </div>
+  </div>
+</div></div>
+</section>
+
+<section>
+<div class="wrap"><div class="takt">
+  <div class="tc">02</div>
+  <div>
+    <p class="eyebrow">Womit du anfängst</p>
+    <h2>Leeres Blatt oder Rohbuch — du entscheidest.</h2>
+    <p>Manche schreiben lieber aus dem Film heraus, Zeile für Zeile. Andere haben schon
+      eine Rohübersetzung und wollen sie am Bild umschreiben. Takewrite macht beides,
+      und die Wahl steht gleich beim ersten Öffnen da.</p>
+
+    <div class="wege">
+      <div class="weg">
+        <h3>Leeres Blatt</h3>
+        <p>Du setzt jeden Take dort an, wo er im Film liegt. Ein Klick auf den Timecode,
+          Rolle vergeben, Satz schreiben. Nichts muss vorbereitet werden.</p>
+      </div>
+      <div class="weg">
+        <h3>Rohbuch laden</h3>
+        <p>Deine Übersetzung kommt als Gerüst herein, jede Zeile an ihrer Stelle im Film.
+          Du gehst sie durch und machst Dialog daraus — das Abtippen entfällt.</p>
+      </div>
+    </div>
+
+    <div class="notiz">
+      <b>Vier Formate, und du musst nichts umbauen.</b> <b>CSV</b>, <b>Excel</b>,
+      <b>Word</b> oder <b>SRT</b>. Welche Spalte der Timecode ist, welche die Rolle und
+      welche der Text, erkennt Takewrite selbst — auch bei fünf Spalten in beliebiger
+      Reihenfolge. Und wenn dein Rohbuch gar keine Timecodes hat, liegen die Zeilen der
+      Reihe nach bereit und warten darauf, dass du sie am Bild ansetzt.
+    </div>
+
+    <p><b>Kommt dein Rohbuch aus einer KI?</b> Dann verlang <b>CSV</b> — als einziges der
+      vier Formate kann eine KI es dir direkt ins Chatfenster schreiben. Word und Excel
+      sind gepackte Archive; die müsstest du ohnehin erst durch ein Tabellenprogramm
+      schicken. Diesen Satz kannst du übernehmen:</p>
+
+    <pre class="rezept">Gib mir das Ergebnis als CSV aus, mit Semikolon getrennt, UTF-8.
+Erste Zeile als Überschrift: Timecode;Rolle;Text
+Eine Zeile je Take. Timecode als hh:mm:ss:ff.
+Text mit Semikolon oder Anführungszeichen in " " setzen.</pre>
+  </div>
+</div></div>
+</section>
+
+<section>
+<div class="wrap"><div class="takt">
+  <div class="tc">03</div>
+  <div>
+    <p class="eyebrow">Was sich ändert</p>
+    <h2>Die Arbeit bleibt. Die Fleißarbeit nicht.</h2>
+
+    <div class="gegen">
+      <div class="a">
+        <h3>Bisher</h3>
+        <ul>
+          <li>Film im <b>Player</b>, Buch in <b>Word</b>, Übersetzung im dritten Fenster.</li>
+          <li>Für jeden Einsatz: anhalten, <b>Zahl ablesen, Zahl abtippen</b>, zurückwechseln.</li>
+          <li>Ein Satz fehlt — <b>Zeile einschieben</b>, Reihenfolge von Hand richten.</li>
+          <li>Rollennamen <b>tausendmal tippen</b>, mit tausend Gelegenheiten für Tippfehler.</li>
+          <li>Am Schluss <b>Format nachbauen</b>, damit es aussieht wie sonst.</li>
+        </ul>
+      </div>
+      <div class="b">
+        <h3>Mit Takewrite</h3>
+        <ul>
+          <li>Bild und Buch <b>nebeneinander</b>, ein Fenster, ein Arbeitsgang.</li>
+          <li><b>Ein Klick</b> — die Zeile hat ihre Stelle, auf das Bild genau.</li>
+          <li>Neue Zeile <b>auf Tastendruck</b>, sie sortiert sich selbst ein.</li>
+          <li>Rollen <b>aus der Liste</b>, Umbenennen gilt sofort überall.</li>
+          <li>Ausgabe <b>in eurer Vorlage</b>. Keine Nacharbeit.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div></div>
+</section>
+
+<section>
+<div class="wrap"><div class="takt">
+  <div class="tc">04</div>
+  <div>
+    <p class="eyebrow">Was beim Schreiben hilft</p>
+    <h2>Gebaut von jemandem, der selbst im Studio steht.</h2>
+    <p>Kein Untertitelprogramm mit einer Rollenspalte obendrauf. Jede Funktion
+      existiert, weil sie an einem echten Buch gefehlt hat.</p>
+
+    <div class="raster">
+      <div>
+        <p class="marke2">Eingestanzter Timecode</p>
+        <h3>Egal, wie der Film gestanzt ist</h3>
+        <p>Beginnt der Timecode im Bild bei 10:00:00:00? Liegt er schief? Einmal den
+          Wert aus dem Bild ablesen und eintragen — ab da rechnet Takewrite jede Anzeige
+          und jeden Export auf den eingestanzten Timecode um. Kein Umrechnen von Hand,
+          und Sprünge an Aktwechseln fallen beim Prüfen der Punkte sofort auf.</p>
+      </div>
+      <div>
+        <p class="marke2">Rollen</p>
+        <h3>Zwei Buchstaben, fertig</h3>
+        <p>Die Auswahl zeigt alle vergebenen Rollen, häufigste zuerst. Bleibt eine übrig,
+          genügt Enter. Jede Figur hat ihre Farbe — beim Blättern siehst du am Rand, wer spricht.</p>
+      </div>
+      <div>
+        <p class="marke2">Takes</p>
+        <h3>Einfügen, wo etwas fehlt</h3>
+        <p>Vorlagen sind lückenhaft, Untertitel sind gerafft. Was gesprochen, aber nirgends
+          notiert ist, setzt du mit einer Taste an genau die Stelle — samt Rollenvorschlag.</p>
+      </div>
+      <div>
+        <p class="marke2">Regieangaben</p>
+        <h3>(ON) (OFF) (CONT) (..)</h3>
+        <p>Die Angaben, die in jedem Buch stehen, liegen auf Tab und den F-Tasten und in
+          einer Leiste über dem Textfeld. Das Leerzeichen dahinter kommt mit.</p>
+      </div>
+      <div>
+        <p class="marke2">Tastatur</p>
+        <h3>Ohne die Hand zu heben</h3>
+        <p>A und D sekundenweise, Pfeiltasten bildweise, J K L als Shuttle wie im Schnittraum.
+          W und S wählen die Zeile, Enter setzt sie — und Strg+Z nimmt jeden Schritt zurück.</p>
+      </div>
+      <div>
+        <p class="marke2">Sicherung</p>
+        <h3>Nichts geht verloren</h3>
+        <p>Jede Änderung wird sofort gesichert — im Browser und, einmal gewählt, als Datei in
+          deinem Projektordner, mit einem Stand je Arbeitstag. Sogar ein exportiertes Buch
+          lässt sich wieder einlesen.</p>
+      </div>
+      <div>
+        <p class="marke2">Suche</p>
+        <h3>Wo war die Stelle?</h3>
+        <p>Ein Feld über dem Buch, es sucht in Rolle und Text zugleich. In der Treffermenge
+          arbeitest du ganz normal weiter — Esc, und alle Zeilen sind wieder da.</p>
+      </div>
+      <div>
+        <p class="marke2">Bild</p>
+        <h3>Kino, wenn du willst</h3>
+        <p>Die Trennlinie zwischen Film und Buch lässt sich ziehen, ein Doppelklick schaltet auf
+          Vollbild — auf Wunsch mit dem laufenden Take als Untertitel im Bild.</p>
+      </div>
+      <div>
+        <p class="marke2">Ausgabe</p>
+        <h3>Eure Vorlage, nicht unsere</h3>
+        <p>Eine echte Word-Datei, kein Nachbau — Titelblatt, Tabelle, Maße aufs Zeichen genau.
+          Dazu die Separierung nach Rollen und PDF über die Druckansicht. Eine eigene
+          Studio-Vorlage richten wir auf Anfrage ein.</p>
+      </div>
+    </div>
+  </div>
+</div></div>
+</section>
+
+<section>
+<div class="wrap"><div class="takt">
+  <div class="tc">&#9654;</div>
+  <div>
+    <p class="eyebrow">So sieht es aus</p>
+    <h2>Ein Fenster statt drei.</h2>
+    <p>Kein Player, keine Textverarbeitung daneben, kein drittes Fenster mit der
+      Roh&uuml;bersetzung. Links l&auml;uft der Film, rechts entsteht das Buch &mdash; und beides
+      sieht man gleichzeitig.</p>
+    <p>Diese Bilder sind aus einer laufenden Arbeit. Jede Figur tr&auml;gt ihre eigene
+      Farbe, ein gr&uuml;ner Punkt hei&szlig;t: diese Zeit hat der Autor best&auml;tigt. Regieangaben
+      wie (OFF) oder (.) stehen mitten im Satz, wo der Sprecher sie braucht.</p>
+    <img src="tw_shot_voll.jpg" alt="Takewrite bei der Arbeit: Film links, Buch mit farbigen Rollen und bestätigten Zeiten rechts"
+      style="width:100%;border:1px solid var(--rule);border-radius:3px" loading="lazy">
+    <div style="display:grid;grid-template-columns:1fr 1.45fr;gap:14px;margin-top:14px">
+      <img src="tw_shot_buch.jpg" alt="Das Rollenmenü: alle Figuren mit ihrer Farbe und Take-Zahl — die wahrscheinlichste liegt der Hand am nächsten"
+        style="width:100%;border:1px solid var(--rule);border-radius:3px" loading="lazy">
+      <img src="tw_shot_regie.jpg" alt="Die Regieleiste in Großaufnahme: zwölf Kacheln von (.) bis (REAKTION), jede mit ihrem Tastenkürzel"
+        style="width:100%;border:1px solid var(--rule);border-radius:3px;align-self:start" loading="lazy">
+    </div>
+  </div>
+</div></div>
+</section>
+
+<section>
+<div class="wrap"><div class="takt">
+  <div class="tc">05</div>
+  <div>
+    <p class="eyebrow">Größenordnung</p>
+    <h2>Ein Spielfilm hat über tausend Einsätze.</h2>
+    <p>Bei drei Handgriffen pro Einsatz — ablesen, abtippen, kontrollieren — sind das
+      dreieinhalbtausend Handgriffe, bevor ein einziger Satz besser geworden ist.
+      Genau die fallen weg. Was bleibt, ist das Schreiben.</p>
+    <p>In meiner eigenen Arbeit hat sich die Zeit für ein Buch dadurch etwa
+      <b>um die Hälfte verkürzt</b> — nicht weil ich schneller formuliere,
+      sondern weil zwischen zwei Sätzen nichts mehr liegt.</p>
+    <div class="band">
+      <div class="stat"><b>3 &rarr; 1</b><span>Programme</span></div>
+      <div class="stat"><b>1</b><span>Klick statt Ablesen und Abtippen</span></div>
+      <div class="stat"><b>1200<span style="font-size:.6em">+</span></b><span>Einsätze je Spielfilm</span></div>
+      <div class="stat"><b>0</b><span>Nacharbeit am Format</span></div>
+      <div class="stat"><b>40–50 %</b><span>weniger Zeit je Buch</span></div>
+    </div>
+  </div>
+</div></div>
+</section>
+
+<section id="preise">
+<div class="wrap"><div class="takt">
+  <div class="tc">06</div>
+  <div>
+    <p class="eyebrow">Preise</p>
+    <h2>Ein Jahr für 389&nbsp;&euro; netto. Jedes weitere für 189&nbsp;&euro;.</h2>
+    <p>Ein Synchronbuch bringt einen vierstelligen Betrag. Takewrite kostet im ersten
+      Jahr einen Bruchteil davon — und ab dem zweiten noch die Hälfte. Alle
+      Aktualisierungen inklusive.</p>
+
+    <div class="preise">
+      <div class="preis">
+        <p class="art">Demo</p>
+        <p class="zahl">0 &euro;</p>
+        <p class="steuer">keine Zahlung, keine Rechnung</p>
+        <p class="wofuer">Gratis · läuft sofort im Browser, nichts zu laden</p>
+        <ul>
+          <li>Alle Funktionen, keine Zeitgrenze</li>
+          <li>40 Takes — genug für eine echte Szene</li>
+          <li>Keine Zahlungsdaten, kein Konto, kein Download</li>
+          <li>Der Stand bleibt beim Umstieg erhalten</li>
+        </ul>
+        <a class="knopf leer" href="demo/" target="_blank" rel="noopener">Demo öffnen</a>
+      </div>
+      <div class="preis gewaehlt">
+        <p class="art">Einzelplatz</p>
+        <p class="zahl">389 &euro;<small>netto, im ersten Jahr</small></p>
+        <p class="steuer">zzgl. 19&nbsp;% USt. &middot; 462,91&nbsp;&euro; brutto</p>
+        <p class="wofuer">Für Synchronautoren und Rohübersetzer</p>
+        <ul>
+          <li>Ein Arbeitsplatz, unbegrenzt viele Filme</li>
+          <li>Verlängerung 189 &euro; netto im Jahr — auch nach einer Pause</li>
+          <li>Alle Aktualisierungen inklusive</li>
+          <li>Ausgabe in eure eigene Word-Vorlage</li>
+          <li>Antwort auf E-Mails von der Person, die es gebaut hat</li>
+        </ul>
+        <a class="knopf" href="https://buy.stripe.com/3cI00j5Dvfdq0ZQ0XN0VO01">Jetzt kaufen</a>
+      </div>
+    </div>
+    <p class="kleingedruckt">Alle Preise netto zzgl. gesetzlicher Umsatzsteuer · Geschäftskunden mit USt-IdNr. rechnen im Reverse-Charge-Verfahren ab · Läuft nicht automatisch weiter — du verlängerst für 189 &euro;, wenn der nächste Film kommt,
+      auch nach einer Pause · Was du geschrieben hast, bleibt deins, auch ohne Verlängerung</p>
+  </div>
+</div></div>
+</section>
+
+<section>
+<div class="wrap"><div class="takt">
+  <div class="tc">07</div>
+  <div>
+    <p class="eyebrow">Bevor du fragst</p>
+    <h2>Was es ist und was es nicht ist.</h2>
+    <div class="fragen">
+      <details open>
+        <summary>Schreibt das Buch sich von selbst?</summary>
+        <p>Nein. Takewrite nimmt dir die Fleißarbeit ab, nicht das Schreiben. Die Formulierung
+          kommt von dir — das Werkzeug sorgt dafür, dass zwischen zwei Sätzen nichts liegt
+          außer dem nächsten Satz.</p>
+      </details>
+      <details>
+        <summary>Kann man damit auch Untertitel oder eine Audiodeskription schreiben?</summary>
+        <p>Ja. Der Handgriff ist derselbe: Text gegen das laufende Bild schreiben, jede Zeile
+          an ihrer Stelle im Film verankert, am Ende eine saubere Ausgabe. Ob in der Zeile
+          dann ein Take, ein Untertitel oder eine Bildbeschreibung steht, ist Takewrite
+          gleichgültig.</p>
+        <p>Was ihm fehlt, sind die untertitelspezifischen Prüfungen — Zeichen je Zeile,
+          Lesegeschwindigkeit, Mindeststandzeit. Wer danach ausliefert, braucht dafür weiter
+          sein gewohntes Werkzeug. Fürs Schreiben selbst ist Takewrite auch dort schneller.</p>
+      </details>
+      <details>
+        <summary>Bekomme ich wirklich unser Buchformat?</summary>
+        <p>Der Export kommt in einer sauberen Buchvorlage: Titelblatt mit Titel, Autor, Genre
+          und Synopsis, danach die Tabelle. Hat euer Studio eine eigene Word-Vorlage, schickt
+          sie uns — wir richten sie ein, und der Export übernimmt Spaltenbreiten, Zeilenhöhen
+          und Ränder auf den Punkt. Das ist Handarbeit von uns, kein Automat, der scheitern kann.</p>
+      </details>
+      <details>
+        <summary>Wird mein Film irgendwohin hochgeladen?</summary>
+        <p>Nein. Der Film wird lokal geöffnet und verlässt deinen Rechner nicht. Es gibt keinen
+          Server, auf den etwas ginge. Das ist keine Datenschutzerklärung, sondern eine Bauweise.</p>
+      </details>
+      <details>
+        <summary>Welche Formate?</summary>
+        <p>Film als MP4, MOV oder MKV — alles, was dein Browser abspielt. Eine vorhandene
+          Textquelle als SRT. Ausgabe als Word-Dokument in eurer Vorlage, als Separierung
+          nach Rollen und als PDF — dazu JSON für alles Weitere.</p>
+      </details>
+      <details>
+        <summary>Läuft es auf dem Mac?</summary>
+        <p>Ja. Es braucht einen aktuellen Browser, sonst nichts — keine Installation,
+          keine Bibliotheken, kein Konto.</p>
+      </details>
+    </div>
+  </div>
+</div></div>
+</section>
+
+<div class="schluss">
+  <div class="wrap"><div class="takt">
+    <div class="tc" style="color:var(--film-dim);border-color:#222c34">&mdash; Ende &mdash;</div>
+    <div>
+      <h2>Der nächste Film kommt bestimmt.</h2>
+      <p>Probier es an dem, der gerade auf deinem Schreibtisch liegt. Die Demo
+        läuft sofort im Browser: alle Funktionen, 40 Takes, nichts zu installieren.</p>
+      <div class="knopfreihe" style="margin-top:26px">
+        <a class="knopf" href="demo/" target="_blank" rel="noopener">Demo öffnen</a>
+        <a class="knopf leer" href="mailto:mail@adamnuemm.de?subject=Takewrite">Fragen stellen</a>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+<section id="impressum">
+<div class="wrap"><div class="takt">
+  <div class="tc">&sect;</div>
+  <div>
+    <p class="eyebrow">Impressum</p>
+    <p style="font-family:var(--ui);font-size:15px;line-height:1.8;color:var(--ink-2)">
+      Angaben gem&auml;&szlig; &sect; 5 DDG<br>
+      <b style="color:var(--ink)">Adam N&uuml;mm</b><br>
+      Maybachufer 28<br>
+      12047 Berlin<br>
+      E-Mail: <a href="mailto:mail@adamnuemm.de">mail@adamnuemm.de</a><br>
+      Umsatzsteuer-Identifikationsnummer gem&auml;&szlig; &sect;&nbsp;27a UStG: DE278354100
+    </p>
+    <p style="font-family:var(--ui);font-size:13px;color:var(--ink-3);max-width:60ch">
+      Takewrite l&auml;uft vollst&auml;ndig im Browser. Filme, B&uuml;cher und Arbeitsst&auml;nde
+      verbleiben auf dem Rechner des Nutzers; diese Seite setzt keine Cookies und
+      bindet keine Drittdienste ein.
+    </p>
+  </div>
+</div></div>
+</section>
+
+<div class="wrap">
+  <footer>
+    <span>Takewrite</span>
+    <span>takewrite.de</span>
+    <span>Synchronbücher am Bild schreiben</span>
+    <span>Version 1.0 · 2026</span>
+    <a href="#impressum" style="color:var(--ink-3)">Impressum</a>
+    <a href="datenschutz.html" style="color:var(--ink-3)">Datenschutz</a>
+    <a href="agb.html" style="color:var(--ink-3)">AGB &amp; Widerruf</a>
+  </footer>
+</div>
+
+<script>
+(function(){
+  /* Der gestanzte Timecode laeuft mit 25 Bildern je Sekunde — kein Verkaufs-
+     argument mehr, nur noch das Detail, an dem man den Arbeitsplatz erkennt. */
+  var el=document.getElementById("stanze");
+  if(!el) return;
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var start=766.32, t0=performance.now();
+  function zwei(n){ return (n<10?"0":"")+n; }
+  function tick(jetzt){
+    var t=start+(jetzt-t0)/1000, f=Math.floor(t*25)%25, s=Math.floor(t);
+    el.textContent=zwei(Math.floor(s/3600))+":"+zwei(Math.floor(s/60)%60)
+                  +":"+zwei(s%60)+":"+zwei(f);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+
+</body>
+</html>

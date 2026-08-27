@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/favicon-512.png" sizes="512x512">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#16606E">
+<title>Willkommen bei Takewrite</title>
+<style>
+:root{
+  --ground:#ECEEF0;--surface:#FAFBFC;--surface-2:#E1E5E8;
+  --ink:#0E1519;--ink-2:#41505A;--ink-3:#78868F;
+  --rule:#CFD6DA;--rule-soft:#DFE4E7;
+  --accent:#16606E;--accent-soft:#D6E6E9;--gut:#1E6B4E;--warm:#A8481A;--warm-soft:#F2E1D6;
+  --display:"Bahnschrift","DIN Alternate","Franklin Gothic Medium",Arial,sans-serif;
+  --body:"Constantia","Cambria",Georgia,serif;
+  --mono:"Cascadia Mono",Consolas,ui-monospace,monospace;
+  --ui:"Segoe UI",Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{
+  --ground:#0B0F13;--surface:#141A20;--surface-2:#1C242B;
+  --ink:#E4E9ED;--ink-2:#A5B0B9;--ink-3:#74818B;
+  --rule:#28323A;--rule-soft:#1E262D;
+  --accent:#6FBECD;--accent-soft:#123037;--gut:#5FC29A;--warm:#DD9159;--warm-soft:#33241A}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
+  font-size:17px;line-height:1.62}
+.wrap{max-width:760px;margin:0 auto;padding:44px 24px 90px}
+.marke{display:flex;align-items:baseline;gap:13px;flex-wrap:wrap;margin-bottom:44px}
+.marke .name{font-family:var(--display);font-size:24px;font-weight:600;letter-spacing:.03em}
+.marke .sub{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3)}
+.haken{width:52px;height:52px;border-radius:50%;background:var(--gut);color:var(--ground);
+  display:flex;align-items:center;justify-content:center;font-size:27px;margin-bottom:20px}
+h1{font-family:var(--display);font-size:clamp(30px,4.4vw,42px);line-height:1.08;
+  margin:0 0 14px;font-weight:600;text-wrap:balance}
+.lead{font-size:19px;color:var(--ink-2);max-width:46ch;margin:0 0 34px}
+h2{font-family:var(--display);font-size:20px;margin:38px 0 10px;font-weight:600}
+p,li{color:var(--ink-2);margin:0 0 1em}
+li{margin-bottom:.5em}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:14.5px;background:var(--surface-2);padding:1.5px 6px;border-radius:2px}
+
+.holen{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+  padding:28px 30px;margin:0 0 12px}
+.holen h2{margin-top:0}
+.knopf{display:inline-flex;align-items:center;gap:11px;font-family:var(--display);
+  font-size:17px;letter-spacing:.05em;background:var(--accent);color:var(--ground);
+  text-decoration:none;padding:16px 30px;border-radius:3px;border:1px solid var(--accent);
+  transition:filter .15s}
+.knopf:hover{filter:brightness(1.14)}
+.knopf b{font-size:19px;line-height:1}
+.kleingedruckt{font-family:var(--mono);font-size:11px;color:var(--ink-3);
+  letter-spacing:.04em;margin:14px 0 0}
+.merken{font-family:var(--ui);font-size:13.5px;color:var(--ink-2);
+  border-top:1px solid var(--rule-soft);margin:18px 0 0;padding:14px 0 0}
+.merken b{color:var(--ink)}
+
+.schritte{border-top:1px solid var(--rule);margin-top:10px}
+.schritt{display:grid;grid-template-columns:44px minmax(0,1fr);gap:18px;padding:20px 0;
+  border-bottom:1px solid var(--rule)}
+.schritt .n{font-family:var(--mono);font-size:12px;color:var(--accent);padding-top:4px}
+.schritt b{display:block;font-family:var(--ui);font-size:17px;font-weight:600;
+  color:var(--ink);margin-bottom:4px}
+.schritt span{font-family:var(--ui);font-size:15.5px;color:var(--ink-2)}
+
+.notiz{background:var(--warm-soft);border-left:3px solid var(--warm);padding:17px 20px;
+  margin:26px 0;font-family:var(--ui);font-size:15px}
+.notiz b{color:var(--ink)}
+.notiz p:last-child{margin-bottom:0}
+
+.fuss{border-top:1px solid var(--rule);margin-top:44px;padding-top:22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink-3);
+  display:flex;gap:18px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="marke">
+  <span class="name">TAKEWRITE</span>
+  <span class="sub">Synchronb&uuml;cher am Bild schreiben</span>
+</div>
+
+<div class="haken">&#10003;</div>
+<h1>Danke &mdash; und willkommen.</h1>
+<p class="lead">Deine Zahlung ist angekommen. Die Rechnung schickt Stripe dir
+gleich per E-Mail. Hier ist deine Fassung von Takewrite.</p>
+
+<div class="holen">
+  <h2>Takewrite herunterladen</h2>
+  <p>Ein Paket, in dem alles steckt: das Programm, der Starter und die Anleitung.
+    Keine Installation, kein Konto, keine Freischaltung.</p>
+  <a class="knopf" href="Takewrite.zip" download><b>&#8595;</b> Takewrite herunterladen</a>
+  <p class="kleingedruckt">ZIP-Paket &middot; 11,7&nbsp;MB &middot; Windows &middot; Python ist enthalten, es muss nichts installiert werden<br><b>Fassung vom 27.08.2026</b> &middot; Verbesserungen kommen hierher &mdash; im ersten Jahr sind sie im Preis enthalten, hol sie dir einfach von dieser Seite.</p>
+  <p class="merken"><b>Diese Seite als Lesezeichen sichern.</b> Die Adresse steht nicht im Zahlungsbeleg &mdash; sie f&uuml;hrt nur von hier aus zum Download. Verloren gegangen? Eine Mail gen&uuml;gt, dann kommt sie umgehend zur&uuml;ck.</p>
+</div>
+
+<h2>Die ersten f&uuml;nf Minuten</h2>
+<div class="schritte">
+  <div class="schritt"><span class="n">01</span>
+    <span><b>Auspacken</b>Das ZIP an einen festen Ort entpacken &mdash; etwa
+      <code>D:\Takewrite</code>. Nicht in den Download-Ordner: dort r&auml;umen
+      manche Systeme selbst&auml;ndig auf.</span></div>
+  <div class="schritt"><span class="n">02</span>
+    <span><b>Projekt anlegen</b><code>Takewrite starten.bat</code> doppelklicken,
+      dann <b>N</b> dr&uuml;cken und den Ordner deines Films angeben. Dort sollten
+      die Filmdatei und, falls vorhanden, eine SRT liegen.</span></div>
+  <div class="schritt"><span class="n">03</span>
+    <span><b>Film w&auml;hlen</b>Im Browser einmal auf <b>Datei w&auml;hlen</b> und die
+      Filmdatei &ouml;ffnen. Sie bleibt auf deinem Rechner &mdash; Takewrite l&auml;dt
+      nichts irgendwohin.</span></div>
+  <div class="schritt"><span class="n">04</span>
+    <span><b>Losschreiben</b>Timecode anklicken macht die Zeile scharf, nochmal
+      klicken setzt sie auf die Filmstelle. Rolle vergeben, Text schreiben.
+      Mit <b>Alt</b> und den Buchstaben unter der linken Hand kommen die
+      Regieangaben.</span></div>
+  <div class="schritt"><span class="n">05</span>
+    <span><b>Ausgeben</b>Unter <b>Ausgabe</b> liegen DOCX, Separierung nach Rollen,
+      PDF und Excel.</span></div>
+</div>
+
+<div class="notiz">
+  <p><b>Dein Arbeitsstand liegt auf deiner Festplatte</b> &mdash; als
+    <code>takewrite-stand.json</code> im Projektordner, dazu eine Kopie je Arbeitstag.
+    Der gr&uuml;ne Knopf <b>Sichern</b> oben rechts h&auml;lt zus&auml;tzlich einen
+    Punkt fest, der nie &uuml;berschrieben wird. Nach jeder Arbeitsstrecke einmal
+    dr&uuml;cken, dann kann nichts verlorengehen.</p>
+</div>
+
+<h2>Wenn etwas klemmt</h2>
+<p>Schreib mir einfach: <a href="mailto:mail@adamnuemm.de">mail@adamnuemm.de</a>.
+Es antwortet die Person, die Takewrite gebaut hat &mdash; kein Formular, kein
+Ticketsystem.</p>
+<p>Und wenn dir beim Arbeiten etwas fehlt oder im Weg ist: erst recht schreiben.
+Fast alles, was Takewrite heute kann, steht darin, weil es an einem echten Buch
+gefehlt hat.</p>
+
+<h2>Deine Lizenz</h2>
+<ul>
+  <li>Ein Arbeitsplatz, unbegrenzt viele Filme</li>
+  <li>Alle Aktualisierungen des ersten Jahres inklusive &mdash; ich schicke sie dir per Mail</li>
+  <li>Die Lizenz <b>verl&auml;ngert sich nicht automatisch zu deinen Lasten</b>.
+      L&auml;uft sie aus, bleibt deine Fassung nutzbar; nur neue Versionen entfallen</li>
+  <li>Verl&auml;ngerung 189&nbsp;&euro; im Jahr, auch nach einer Pause</li>
+</ul>
+
+<div class="fuss">
+  <a href="../">takewrite.de</a>
+  <a href="../agb.html">AGB &amp; Widerruf</a>
+  <a href="../datenschutz.html">Datenschutz</a>
+  <a href="../#impressum">Impressum</a>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,48 @@
+1
+00:00:04,120 --> 00:00:06,760
+Wo warst du gestern Abend?
+
+2
+00:00:07,000 --> 00:00:09,480
+Das geht dich nichts an.
+
+3
+00:00:10,240 --> 00:00:12,900
+Seit wann geht mich das nichts an?
+
+4
+00:00:14,000 --> 00:00:16,320
+Seit du angefangen hast zu fragen.
+
+5
+00:00:18,600 --> 00:00:21,040
+Ich habe deinen Wagen gesehen. Am Hafen.
+
+6
+00:00:22,100 --> 00:00:23,900
+Dann hast du dich geirrt.
+
+7
+00:00:25,400 --> 00:00:28,760
+Ich irre mich nie bei Autos. Bei Menschen schon.
+
+8
+00:00:31,000 --> 00:00:33,480
+Setz dich. Das dauert.
+
+9
+00:00:35,200 --> 00:00:37,640
+Ich stehe lieber.
+
+10
+00:00:39,000 --> 00:00:42,300
+Wie du willst. Aber hinterher setzt du dich.
+
+11
+00:00:45,120 --> 00:00:47,880
+Es ging nie um das Geld, oder?
+
+12
+00:00:49,000 --> 00:00:50,900
+Es geht immer um das Geld.
+
