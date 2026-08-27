@@ -434,7 +434,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .trrow .x i{font-style:italic;color:var(--ink-2)}
 
 /* Eigenes Rollenmenue. Das eingebaute datalist filtert nach dem, was schon im
-   Feld steht — steht dort DILAN, sind alle anderen Rollen unerreichbar. */
+   Feld steht — steht dort schon ein Rollenname, sind alle anderen
+   unerreichbar. */
 .rollenpopup{position:absolute;z-index:60;display:none;background:var(--surface);
   border:1px solid var(--rule);border-radius:3px;box-shadow:0 10px 28px rgba(0,0,0,.24);
   min-width:160px}   /* keine feste Hoehe: es sollen immer alle Rollen zu sehen sein */
@@ -2973,7 +2974,7 @@ var rolleVorher=null;
 /* Beim Verlassen des Rollenfeldes: Es aendert sich nur diese Zeile. Hat die
    alte Figur weitere Zeilen, fragt die App unten, ob die mit sollen. */
 /* Gibt es die Figur schon — nur anders geschrieben? Dann gilt die vorhandene
-   Schreibweise. Sonst haette man "LISA" und "lisa" als zwei Rollen, mit zwei
+   Schreibweise. Sonst haette man "ROLLE" und "rolle" als zwei Rollen, mit zwei
    Farben, zwei Menueeintraegen und zwei Abschnitten in der Separierung. */
 function schreibweiseAngleichen(name, ausserZeile){
   var suche=name.trim().toLowerCase();
@@ -3852,7 +3853,7 @@ function spaltenDeuten(zeilen){
      Buch kommt jede Figur viele Male vor. Eine Spalte, in der jeder Wert genau
      einmal steht, ist eine Nummerierung — und aus reinen Zahlen besteht kein
      Rollenname. Beides fliegt darum vorher raus, sonst gewinnt die laufende
-     Nummer den Vergleich gegen LISA und MARC. */
+     Nummer den Vergleich gegen die Rollennamen. */
   var rolle=-1, bestScore=1e9;
   for(var c=0;c<breite;c++){
     if(c===tc || c===text || gefuellt[c]<3) continue;
