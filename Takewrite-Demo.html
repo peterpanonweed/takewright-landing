@@ -842,6 +842,17 @@ input[type=range]{width:100%;accent-color:var(--accent)}
         <button class="mini" id="projNeu">Neues Projekt…</button>
       </div>
       <div class="pbody">
+        <details class="klapp tastenspick" style="margin:0 0 10px">
+          <summary>Was ist der Takewrite-Server?</summary>
+          <p class="hint" style="margin:6px 0 0">Das schwarze Fenster, das beim Start mit
+            aufgeht. Es liefert die App an den Browser und legt deinen Arbeitsstand als
+            Datei in den Filmordner — <b>takewrite-stand.json</b>, dazu eine Tageskopie
+            in <b>Sicherungen\</b>. Ohne ihn lebt das Buch nur im Browserspeicher.
+            Er kennt auch die Projektliste, darum gibt es diesen Bereich nur mit ihm.
+            <b>Schließt du das Fenster, ist das Projekt beendet.</b> Nach einem Update
+            der App muss er einmal neu gestartet werden — er läuft als eigener Vorgang
+            weiter und bekommt neue Fassungen nicht von selbst mit.</p>
+        </details>
         <div class="kacheln" id="projKacheln"><div class="empty-note">— wird geladen —</div></div>
         <form class="projneu" id="projForm" style="display:none">
           <label>Name<input type="text" id="projName" spellcheck="false" autocomplete="off" placeholder="wie der Film heißt"></label>
@@ -5390,18 +5401,44 @@ window.__tc = { framesToTC:framesToTC, tcToFrames:tcToFrames, PROFILES:PROFILES 
 var projekte=[];
 function projekteLaden(){
   fetch("projekte?t="+Date.now(), {cache:"no-store"})
-    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    /* 404 heisst etwas anderes als "keine Verbindung": Dann steht ein
+       Takewrite-Server da, er ist nur aelter als die App. Das Programm wird
+       als Datei in den Filmordner geliefert, der Server laeuft daneben als
+       eigener Vorgang weiter — nach einem Update kennt er neue Wege erst,
+       wenn er einmal neu gestartet wurde. Beides in denselben Satz zu
+       packen schickt den Nutzer in die falsche Richtung. */
+    .then(function(r){
+      if(r.ok) return r.json();
+      if(r.status!==404) throw new Error("weg");
+      /* Ein 404 allein beweist nichts — jeder Webserver antwortet so, auch
+         der, der die Demo ausliefert. Ein Takewrite-Server verraet sich an
+         /sicherungen: Kennt er den Weg, ist er echt und nur aelter. */
+      return fetch("sicherungen?t="+Date.now(), {cache:"no-store"})
+        .then(function(s){ throw new Error(s.ok ? "alt" : "weg"); });
+    })
     .then(function(d){ projekte=(d&&d.projekte)||[]; projekteZeigen(); })
-    .catch(function(){ projekte=[]; projekteZeigen(true); });
+    .catch(function(e){
+      projekte=[];
+      projekteZeigen((e && e.message==="alt") ? "alt" : "weg");
+    });
 }
-function projekteZeigen(ohneServer){
+function projekteZeigen(stoerung){
   var box=document.getElementById("projKacheln");
   document.getElementById("projCnt").textContent =
     projekte.length ? projekte.length+(projekte.length===1?" Projekt":" Projekte") : "";
-  document.getElementById("projNeu").style.display = ohneServer ? "none" : "";
-  document.getElementById("projKachel").style.display = ohneServer ? "none" : "";
-  if(ohneServer){
-    box.innerHTML='<div class="empty-note">— nur mit dem Takewrite-Server —</div>'; return;
+  document.getElementById("projNeu").style.display = stoerung ? "none" : "";
+  document.getElementById("projKachel").style.display = stoerung ? "none" : "";
+  if(stoerung==="alt"){
+    box.innerHTML='<div class="empty-note">— Der Takewrite-Server läuft noch in einer '
+      + 'älteren Fassung und kennt die Projektverwaltung nicht.<br>'
+      + 'Erst <b>Sichern</b>, dann das schwarze Fenster <i>Takewrite-Server</i> schließen '
+      + 'und die Verknüpfung <b>Takewrite</b> neu anklicken. —</div>';
+    return;
+  }
+  if(stoerung){
+    box.innerHTML='<div class="empty-note">— Kein Takewrite-Server erreichbar. '
+      + 'Über die Desktop-Verknüpfung <b>Takewrite</b> starten. —</div>';
+    return;
   }
   if(!projekte.length){ box.innerHTML='<div class="empty-note">— noch kein Projekt —</div>'; return; }
   var t=Date.now();
