@@ -643,6 +643,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .projneu input{font:inherit;font-size:13px;text-transform:none;letter-spacing:0;
   color:var(--ink);background:var(--surface);padding:6px 8px;
   border:1px solid var(--rule);border-radius:4px}
+.ordnerzeile{display:flex;gap:6px;align-items:stretch}
+.ordnerzeile input{flex:1;min-width:0}
 
 /* Die eingeklappte Tastenkunde */
 .tastenspick{margin-top:10px}
@@ -889,7 +891,12 @@ input[type=range]{width:100%;accent-color:var(--accent)}
         <div class="kacheln" id="projKacheln"><div class="empty-note">— wird geladen —</div></div>
         <form class="projneu" id="projForm" style="display:none">
           <label>Name<input type="text" id="projName" spellcheck="false" autocomplete="off" placeholder="wie der Film heißt"></label>
-          <label>Ordner<input type="text" id="projOrdner" spellcheck="false" autocomplete="off" placeholder="Pfad einfügen — im Explorer die Adresszeile kopieren"></label>
+          <label>Ordner
+            <span class="ordnerzeile">
+              <input type="text" id="projOrdner" spellcheck="false" autocomplete="off" placeholder="noch keiner gewählt">
+              <button type="button" class="mini" id="projDurchsuchen">Durchsuchen…</button>
+            </span>
+          </label>
           <div class="btnrow">
             <span class="hint" style="flex:1;margin:0">Im Ordner müssen die Filmdatei und eine Untertiteldatei liegen.</span>
             <button type="button" class="mini" id="projAbbruch">Abbrechen</button>
@@ -5734,6 +5741,29 @@ document.getElementById("projKachel").addEventListener("click", function(){
 
 document.getElementById("projAbbruch").addEventListener("click", function(){
   projektFormularZeigen(false);
+});
+/* Der Ordnerdialog kommt vom Server: Ein Browser gibt keinen Pfad heraus —
+   er darf es nicht, und das ist richtig so. Der Server sitzt auf demselben
+   Rechner und darf fragen. */
+document.getElementById("projDurchsuchen").addEventListener("click", function(){
+  var k=this;
+  k.disabled=true; k.textContent="Fenster ist offen…";
+  fetch("ordnerwaehlen", {method:"POST"})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d && d.ok && d.ordner){
+        var f=document.getElementById("projOrdner");
+        f.value=d.ordner;
+        var n=document.getElementById("projName");
+        /* Der Ordnername ist fast immer der Filmtitel — als Vorschlag gut
+           genug, und er laesst sich ueberschreiben. */
+        if(!n.value.trim()) n.value=d.ordner.replace(/[\\/]+$/,"").split(/[\\/]/).pop();
+      } else if(d && !d.ok){
+        toast(d.grund || "Kein Ordner gewählt");
+      }
+    })
+    .catch(function(){ toast("Ordnerdialog nicht möglich — läuft der Takewrite-Server?"); })
+    .then(function(){ k.disabled=false; k.textContent="Durchsuchen…"; });
 });
 document.getElementById("projForm").addEventListener("submit", function(e){
   e.preventDefault();
