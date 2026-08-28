@@ -608,9 +608,17 @@ input[type=range]{width:100%;accent-color:var(--accent)}
    Die Kachel traegt ein Standbild aus dem Film. Das ist kein Schmuck: In
    einer Liste aus Namen sucht man, in einer Reihe aus Bildern erkennt man. */
 .kacheln{display:grid;grid-template-columns:repeat(auto-fill,minmax(134px,1fr));gap:10px}
-.kachel{padding:0;text-align:left;font:inherit;color:inherit;background:var(--surface);
-  border:1px solid var(--rule);border-radius:6px;overflow:hidden;cursor:pointer;
-  display:flex;flex-direction:column}
+.kachel{position:relative;padding:0;text-align:left;font:inherit;color:inherit;
+  background:var(--surface);border:1px solid var(--rule);border-radius:6px;
+  overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
+/* Das Kreuz zeigt sich erst beim Überfahren: Es nimmt etwas weg, und was
+   etwas wegnimmt, soll nicht ständig unter dem Zeiger liegen. */
+.kachel .weg{position:absolute;top:5px;right:5px;width:19px;height:19px;
+  border-radius:50%;background:var(--bad);color:#fff;font-weight:600;
+  font-family:var(--font-ui);font-size:14px;line-height:19px;text-align:center;
+  display:none;z-index:2}
+.kachel:hover .weg{display:block}
+.kachel .weg:hover{background:var(--ink)}
 .kachel:hover{border-color:var(--warm)}
 .kachel.dies{border:2px solid var(--ink);cursor:default}
 .kachel.fehlt{opacity:.45}
@@ -5628,6 +5636,10 @@ function projekteZeigen(stoerung){
     var bild = p.kachel ? ' style="background-image:url(kachel?p='+p.nr+'&t='+t+')"' : '';
     return '<button type="button" class="kachel'+(p.dies?' dies':'')+(p.da?'':' fehlt')+'"'
       + ' data-port="'+p.port+'" title="'+esc(p.ordner)+'">'
+      /* Kein Kreuz am laufenden Projekt: Man kann nicht den Ast absaegen,
+         auf dem man sitzt — und der Server lehnt es ohnehin ab. */
+      + (p.dies ? '' : '<span class="weg" data-weg="'+p.nr+'"'
+          + ' title="Aus der Liste nehmen — Ordner und Buch bleiben">&times;</span>')
       + '<span class="bild"'+bild+'>'+(p.kachel?'':'ohne Bild')+'</span>'
       + '<span class="nam">'+esc(p.name)+'</span>'
       + '<span class="zst">Port '+p.port
@@ -5651,6 +5663,28 @@ function projektFormularZeigen(auf){
 }
 
 document.getElementById("projKacheln").addEventListener("click", function(e){
+  /* Das Kreuz zuerst — es sitzt in der Kachel und wuerde sonst den Wechsel
+     ausloesen, bevor man ueberhaupt gefragt wurde. */
+  var weg=e.target.closest && e.target.closest("[data-weg]");
+  if(weg){
+    e.stopPropagation();
+    var nr=+weg.getAttribute("data-weg");
+    var p=projekte.filter(function(x){ return x.nr===nr; })[0];
+    if(!p) return;
+    if(!confirm("„"+p.name+"“ aus der Liste nehmen?\n\n"
+      + "Der Filmordner und das geschriebene Buch bleiben unangetastet — "
+      + "es verschwindet nur die Kachel.")) return;
+    fetch("projekt/stilllegen", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify({nr:nr})})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(!d || !d.ok){ toast("Nicht möglich: "+((d&&d.grund)||"unbekannter Grund")); return; }
+        projekteLaden();
+        toast("„"+p.name+"“ ist aus der Liste — Ordner und Buch sind unberührt");
+      })
+      .catch(function(){ toast("Nicht möglich — läuft der Takewrite-Server?"); });
+    return;
+  }
   var k=e.target.closest && e.target.closest(".kachel");
   if(!k) return;
   if(k.classList.contains("neu")){
