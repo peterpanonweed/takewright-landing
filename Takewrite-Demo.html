@@ -620,6 +620,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .kachel .nam{padding:6px 8px 2px;font-size:12.5px;line-height:1.3}
 .kachel .zst{padding:0 8px 6px;font-family:var(--font-mono);font-size:9.5px;color:var(--ink-3)}
 .kachel .zst b{color:var(--good);font-weight:700}
+/* Die leere Kachel: gestrichelt statt durchgezogen, damit sie als Platz
+   gelesen wird und nicht als Projekt. */
+.kachel.neu{background:none;border:1px dashed var(--rule)}
+.kachel.neu:hover{border-style:solid;border-color:var(--warm)}
+.kachel.neu .bild{background:none}
+.kachel.neu .plus{font-size:32px;line-height:1;font-weight:300;color:var(--ink-3)}
+.kachel.neu:hover .plus{color:var(--warm)}
+.kachel.neu .nam{color:var(--ink-2)}
 .projneu{display:flex;flex-direction:column;gap:8px;margin-top:12px;
   padding-top:12px;border-top:1px solid var(--rule-soft)}
 .projneu label{display:flex;flex-direction:column;gap:4px;font-family:var(--font-mono);
@@ -857,7 +865,6 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <div class="phead"><h3>Projekte</h3>
         <span class="cnt" id="projCnt"></span>
         <button class="mini" id="projKachel" title="Das Bild, das gerade im Player steht, als Titelbild dieses Projekts festhalten">Titelbild aufnehmen</button>
-        <button class="mini" id="projNeu">Neues Projekt…</button>
       </div>
       <div class="pbody">
         <details class="klapp tastenspick" style="margin:0 0 10px">
@@ -5496,7 +5503,6 @@ function projekteZeigen(stoerung){
   var box=document.getElementById("projKacheln");
   document.getElementById("projCnt").textContent =
     projekte.length ? projekte.length+(projekte.length===1?" Projekt":" Projekte") : "";
-  document.getElementById("projNeu").style.display = stoerung ? "none" : "";
   document.getElementById("projKachel").style.display = stoerung ? "none" : "";
   if(stoerung==="alt"){
     box.innerHTML='<div class="empty-note">— Der Takewrite-Server läuft noch in einer '
@@ -5510,7 +5516,6 @@ function projekteZeigen(stoerung){
       + 'Über die Desktop-Verknüpfung <b>Takewrite</b> starten. —</div>';
     return;
   }
-  if(!projekte.length){ box.innerHTML='<div class="empty-note">— noch kein Projekt —</div>'; return; }
   var t=Date.now();
   box.innerHTML=projekte.map(function(p){
     var bild = p.kachel ? ' style="background-image:url(kachel?p='+p.nr+'&t='+t+')"' : '';
@@ -5521,12 +5526,31 @@ function projekteZeigen(stoerung){
       + '<span class="zst">Port '+p.port
       + (p.dies?' · <b>hier</b>':(p.laeuft?' · läuft':''))
       + (p.da?'':' · Ordner fehlt')+'</span></button>';
-  }).join("");
+  }).join("")
+  /* Die leere Kachel mit dem Plus steht am Ende der Reihe, wo das Auge nach
+     der letzten Karte ohnehin hinlaeuft. Anlegen gehoert zu den Projekten,
+     nicht als Schaltflaeche in die Kopfzeile. Sie erscheint auch dann, wenn
+     noch gar kein Projekt da ist — dann ist sie der einzige Weg nach vorn. */
+  + '<button type="button" class="kachel neu" id="projNeu"'
+  + ' title="Ein weiteres Filmprojekt anlegen">'
+  + '<span class="bild"><span class="plus">+</span></span>'
+  + '<span class="nam">Neues Projekt</span>'
+  + '<span class="zst">Ordner einfügen</span></button>';
+}
+
+function projektFormularZeigen(auf){
+  document.getElementById("projForm").style.display = auf ? "" : "none";
+  if(auf) document.getElementById("projName").focus();
 }
 
 document.getElementById("projKacheln").addEventListener("click", function(e){
   var k=e.target.closest && e.target.closest(".kachel");
-  if(!k || k.classList.contains("dies")) return;
+  if(!k) return;
+  if(k.classList.contains("neu")){
+    projektFormularZeigen(document.getElementById("projForm").style.display==="none");
+    return;
+  }
+  if(k.classList.contains("dies")) return;
   if(k.classList.contains("fehlt")){ toast("Den Ordner dieses Projekts gibt es nicht mehr"); return; }
   /* Vor dem Wechsel sichern: Der laufende Stand haengt sonst noch in der
      gebremsten Sicherung und ginge mit dem Seitenwechsel verloren. */
@@ -5550,14 +5574,8 @@ document.getElementById("projKachel").addEventListener("click", function(){
   }, "image/jpeg", 0.72);
 });
 
-document.getElementById("projNeu").addEventListener("click", function(){
-  var f=document.getElementById("projForm");
-  var auf = f.style.display==="none";
-  f.style.display = auf ? "" : "none";
-  if(auf) document.getElementById("projName").focus();
-});
 document.getElementById("projAbbruch").addEventListener("click", function(){
-  document.getElementById("projForm").style.display="none";
+  projektFormularZeigen(false);
 });
 document.getElementById("projForm").addEventListener("submit", function(e){
   e.preventDefault();
