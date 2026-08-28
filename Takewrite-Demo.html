@@ -570,11 +570,25 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   letter-spacing:.04em;color:var(--ink-2);cursor:pointer;padding:6px 0;width:100%}
 .schalter input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
 
-/* Prüflauf: vorher durchgestrichen, nachher hervorgehoben */
+/* Prüflauf: vorher durchgestrichen, nachher hervorgehoben.
+
+   pre-wrap ist hier keine Kosmetik, sondern die Bedingung dafuer, dass man
+   ueberhaupt etwas sieht: HTML laesst mehrfache Leerzeichen zusammenfallen.
+   "Na los  Geld her" und "Na los Geld her" waren im Blatt nicht zu
+   unterscheiden — 98 von 104 Funden betrafen genau das, und vorher und
+   nachher sahen Zeile fuer Zeile gleich aus. */
 .pruefzeile .vorher{font-size:13px;line-height:1.4;color:var(--ink-3);
-  text-decoration:line-through;text-decoration-color:var(--bad);margin-top:3px}
+  text-decoration:line-through;text-decoration-color:var(--bad);margin-top:3px;
+  white-space:pre-wrap}
 .pruefzeile .nachher{font-size:13.5px;line-height:1.4;color:var(--ink);margin-top:2px;
-  padding-left:9px;border-left:2px solid var(--gut,#1E6B4E)}
+  padding-left:9px;border-left:2px solid var(--gut,#1E6B4E);white-space:pre-wrap}
+/* Die geaenderte Stelle, auf beiden Zeilen an derselben Stelle markiert */
+.pruefzeile .vorher mark{background:var(--bad-soft)}
+.pruefzeile .nachher mark{background:var(--warm-soft)}
+.pruefzeile mark{color:inherit;border-radius:2px;padding:0 1px;text-decoration:inherit}
+/* Ein Leerzeichen innerhalb der Markierung wird als Punkt gezeigt — sonst
+   sieht man an einer Stelle, an der ein Leerzeichen verschwindet, nichts. */
+.pruefzeile .lz{font-style:normal;font-weight:700;opacity:.45}
 
 /* Titelblatt-Felder */
 .kopffelder{display:flex;flex-direction:column;gap:10px}
@@ -4120,12 +4134,40 @@ var PRUEFREGELN=[
    fn:function(s){ return s.replace(/\)(?=[A-Za-zÄÖÜäöüß0-9])/g, ") "); }},
   {name:"Doppelte Leerzeichen",
    fn:function(s){ return s.replace(/[ \t]{2,}/g, " "); }},
+  /* Ein Komma mit Leerzeichen davor ist im Deutschen oft gar kein Komma,
+     sondern das oeffnende einfache Anfuehrungszeichen: „die Teilnehmerinnen
+     am Wettbewerb ,Miss Britannien'". Zog diese Regel das Leerzeichen weg,
+     sprang darauf "Leerzeichen nach Komma" an und machte
+     "Wettbewerb, Miss Britannien'" daraus — aus einer Anfuehrung wurde eine
+     Aufzaehlung, und das schliessende Zeichen hing in der Luft. Zwei solcher
+     Stellen standen im Buch, und in der Liste sahen sie aus wie die
+     harmlosen Leerzeichenfunde daneben.
+
+     Auslassungspunkte bleiben ebenfalls in Ruhe: "Ich dachte Du bist ..."
+     ist gueltig gesetzt — mit Leerzeichen, wenn Woerter fehlen — und
+     "(.) ..." zu "(.)..." zusammenzuziehen will niemand. */
   {name:"Leerzeichen vor Satzzeichen",
-   fn:function(s){ return s.replace(/[ \t]+([,.;:!?])/g, "$1"); }},
+   fn:function(s){ return s.replace(/[ \t]+([,.;:!?])/g,
+     function(ganz, z, pos, text){
+       var danach=text.slice(pos+ganz.length);
+       if(z==="," && /^[A-Za-zÄÖÜäöüß][^,.;:!?]{0,40}['’‘]/.test(danach)) return ganz;
+       if(z==="." && /^\./.test(danach)) return ganz;
+       return z;
+     }); }},
   {name:"Leerzeichen nach Punkt",
    fn:function(s){ return s.replace(/([a-zäöüß])\.(?=[A-ZÄÖÜ])/g, "$1. "); }},
+  /* Dieselbe Anfuehrungsfalle von der anderen Seite: "Wettbewerb,Miss
+     Britannien'" ist kein vergessenes Leerzeichen. Steht in derselben
+     Wortgruppe ein schliessendes einfaches Anfuehrungszeichen, bleibt das
+     Komma, wie es ist. Das Fenster endet am naechsten Satzzeichen — ein
+     echtes "okay,hör zu." wird darum weiterhin getrennt. */
   {name:"Leerzeichen nach Komma",
-   fn:function(s){ return s.replace(/([A-Za-zÄÖÜäöüß]),(?=[A-Za-zÄÖÜäöüß])/g, "$1, "); }},
+   fn:function(s){ return s.replace(/([A-Za-zÄÖÜäöüß]),(?=[A-Za-zÄÖÜäöüß])/g,
+     function(ganz, vor, pos, text){
+       var danach=text.slice(pos+ganz.length);
+       if(/^[A-Za-zÄÖÜäöüß][^,.;:!?]{0,40}['’‘]/.test(danach)) return ganz;
+       return vor+", ";
+     }); }},
   {name:"Leerzeichen in Klammern",
    fn:function(s){ return s.replace(/\([ \t]+/g,"(").replace(/[ \t]+\)/g,")"); }}
 ];
@@ -4158,6 +4200,35 @@ function pruefLauf(){
   toast(pruefFunde.length ? pruefFunde.length+" Stellen gefunden" : "Nichts gefunden — sauber");
 }
 
+/* Zeigt eine der beiden Fassungen und markiert darin, was sie von der
+   anderen unterscheidet. Beide haben dieselbe Auszeichnungsstruktur — die
+   Regeln fassen nur den Text zwischen den Tags an, siehe aufTextteilen().
+   Darum laesst sich Stueck fuer Stueck vergleichen und genau die abweichende
+   Stelle markieren, ohne den Kursivsatz zu verlieren.
+
+   Leerzeichen innerhalb der Markierung werden als Punkt gezeigt. Ohne das
+   sieht man bei einem verschwindenden Leerzeichen schlicht nichts. */
+function pruefMarkiert(eigen, andere){
+  var A=String(eigen==null?"":eigen).split(/(<[^>]*>)/),
+      B=String(andere==null?"":andere).split(/(<[^>]*>)/);
+  if(A.length!==B.length) return nurKursiv(eigen);      /* Rueckfall */
+  function sichtbar(s){ return esc(s).replace(/ /g,'<span class="lz">·</span>'); }
+  var out="";
+  for(var i=0;i<A.length;i++){
+    if(i%2===1){ out+=A[i]; continue; }                 /* Auszeichnung bleibt */
+    var x=A[i], y=B[i];
+    if(x===y){ out+=esc(x); continue; }
+    var v=0, m=Math.min(x.length,y.length);
+    while(v<m && x.charAt(v)===y.charAt(v)) v++;
+    var h=0;
+    while(h<m-v && x.charAt(x.length-1-h)===y.charAt(y.length-1-h)) h++;
+    out += esc(x.slice(0,v))
+         + '<mark>'+sichtbar(x.slice(v, x.length-h))+'</mark>'
+         + esc(x.slice(x.length-h));
+  }
+  return out;
+}
+
 function pruefZeigen(){
   var box=document.getElementById("prRows"), p=prof();
   document.getElementById("prCnt").textContent = pruefFunde.length ? pruefFunde.length+" Funde" : "";
@@ -4170,8 +4241,8 @@ function pruefZeigen(){
     var tc=(bitcAt(t) || framesToTC(Math.round(t*p.rate), p)).slice(0,8);
     return '<div class="row pruefzeile"><div>'
       + '<div class="s">'+tc+'  ·  '+esc(f.gruende.join(" · "))+'</div>'
-      + '<div class="vorher">'+nurKursiv(f.alt)+'</div>'
-      + '<div class="nachher">'+nurKursiv(f.neu)+'</div>'
+      + '<div class="vorher">'+pruefMarkiert(f.alt, f.neu)+'</div>'
+      + '<div class="nachher">'+pruefMarkiert(f.neu, f.alt)+'</div>'
       + '</div><div class="acts">'
       + '<button class="mini" data-prgo="'+n+'">Hin</button>'
       + '<button class="mini" data-prok="'+n+'">Übernehmen</button>'
@@ -4191,11 +4262,38 @@ function pruefUebernehmen(n){
 }
 
 document.getElementById("prStart").addEventListener("click", pruefLauf);
+/* Alles auf einmal — in EINEM Durchgang, mit EINEM Sichern am Ende.
+
+   Die Fassung davor lief `while(pruefFunde.length) pruefUebernehmen(0)`.
+   Das hatte zwei Fehler, und beide trafen erst bei einem vollen Buch zu:
+
+   1. Ein Fund, der sich nicht anwenden laesst — weil die Zeile seit dem
+      Durchsuchen bearbeitet wurde — kehrt aus pruefUebernehmen() zurueck,
+      OHNE sich aus der Liste zu nehmen. Die Bedingung blieb wahr, und die
+      Schleife lief endlos. Der Browser meldete "Seite reagiert nicht".
+   2. Selbst wenn alles glattging, sicherte jeder einzelne Fund den ganzen
+      Stand: bei 104 Funden 104-mal das komplette Buch in JSON und in den
+      Speicher geschrieben, dazu 104 Neuaufbauten der Fundliste. Und der
+      Rueckgaengig-Stapel lief mit 80 Vollkopien voll — die Arbeit davor
+      war damit aus dem Stapel gedraengt.
+
+   Darum: ueber eine feste Liste laufen, nichts anwenden, was nicht mehr
+   passt, und am Ende einmal zeichnen und einmal sichern. */
 document.getElementById("prAlle").addEventListener("click", function(){
-  var n=pruefFunde.length;
-  while(pruefFunde.length) pruefUebernehmen(0);
-  trRender(); sichern();
-  toast(n+" Stellen übernommen");
+  var uebernommen=0, uebrig=[];
+  pruefFunde.forEach(function(f){
+    var c=cues[f.i];
+    if(!c || c.geloescht || (c.text||"")!==f.alt){ uebrig.push(f); return; }
+    c.text=f.neu; c.textGeaendert=true;
+    uebernommen++;
+  });
+  pruefFunde=uebrig;
+  trRender();
+  pruefZeigen();
+  if(uebernommen) sichern();
+  toast(uebrig.length
+    ? uebernommen+" übernommen, "+uebrig.length+" übersprungen — diese Zeilen haben sich geändert, bitte neu durchsuchen"
+    : uebernommen+" Stellen übernommen");
 });
 document.getElementById("prRows").addEventListener("click", function(e){
   var go=e.target.getAttribute("data-prgo"), ok=e.target.getAttribute("data-prok");
