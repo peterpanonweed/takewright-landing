@@ -590,6 +590,20 @@ input[type=range]{width:100%;accent-color:var(--accent)}
    sieht man an einer Stelle, an der ein Leerzeichen verschwindet, nichts. */
 .pruefzeile .lz{font-style:normal;font-weight:700;opacity:.45}
 
+/* Die Filme, die im Projektordner liegen — in der Startebene ueber dem
+   Dateidialog. Der Dialog bleibt fuer alles, was woanders liegt. */
+.filmliste{display:flex;flex-direction:column;gap:6px;align-items:center;
+  margin-bottom:14px;max-width:44em}
+.fltitel{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--film-dim)}
+.flknopf{font:inherit;font-size:13px;letter-spacing:0;text-transform:none;
+  color:var(--film-ink);background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.22);border-radius:5px;
+  padding:7px 14px;cursor:pointer;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flknopf:hover{background:rgba(255,255,255,.15);border-color:var(--film-accent)}
+.flknopf i{font-style:normal;color:var(--film-dim);margin-left:8px}
+
 /* ---------- Projekte ----------
    Die Kachel traegt ein Standbild aus dem Film. Das ist kein Schmuck: In
    einer Liste aus Namen sucht man, in einer Reihe aus Bildern erkennt man. */
@@ -728,6 +742,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
             <span class="fsEinsText"><b>Zuerst die Filmdatei.</b>
               Ohne Film kein Timecode &mdash; alles Weitere h&auml;ngt daran.</span>
           </div>
+          <!-- Was der Server im Projektordner gefunden hat. Liegt genau ein
+               Film dort, laedt die App ihn selbst; liegen mehrere, steht die
+               Wahl hier — ein Klick statt eines Dateidialogs. -->
+          <div class="filmliste" id="filmListe" style="display:none"></div>
           <strong>Filmdatei hierher ziehen</strong>
           <span>oder</span>
           <button class="pick" id="pickbtn">Datei wählen</button>
@@ -838,7 +856,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <div class="panel">
       <div class="phead"><h3>Projekte</h3>
         <span class="cnt" id="projCnt"></span>
-        <button class="mini" id="projKachel" title="Das Bild, das gerade im Player steht, als Kachel dieses Projekts festhalten">Kachel aufnehmen</button>
+        <button class="mini" id="projKachel" title="Das Bild, das gerade im Player steht, als Titelbild dieses Projekts festhalten">Titelbild aufnehmen</button>
         <button class="mini" id="projNeu">Neues Projekt…</button>
       </div>
       <div class="pbody">
@@ -5393,6 +5411,58 @@ function frageSchliessen(){ document.getElementById("frage").classList.remove("o
 /* Rechenkern nach aussen, damit die Timecode-Arithmetik nachprüfbar bleibt */
 window.__tc = { framesToTC:framesToTC, tcToFrames:tcToFrames, PROFILES:PROFILES };
 
+/* ---------- Der Film aus dem Projektordner ----------
+   Der Server kennt den Ordner — dann kann er auch nachsehen, was an Film
+   darin liegt, statt bei jedem Start denselben Dateidialog zu verlangen.
+   Moeglich wurde das erst mit den Bereichsabrufen im Server: Ohne sie holt
+   der Browser bei jedem Sprung den Film von vorn. */
+var FILMWAHL = "takewrite_film_" + location.pathname;
+function filmAusOrdner(name){
+  bildrateGeprueft=false; bildrateProben=[];    /* neuer Film, neue Messung */
+  if(vid.src && vid.src.slice(0,5)==="blob:") URL.revokeObjectURL(vid.src);
+  vid.src = encodeURIComponent(name);
+  fileName = name;
+  document.getElementById("filename").textContent = name;
+  var tf=document.getElementById("kfTitel");
+  if(tf && !tf.value.trim()){ tf.value=name.replace(/\.[^.]+$/,""); sichernGebremst(); }
+  /* Einmal gewaehlt, beim naechsten Mal von selbst — das ist der eigentliche
+     Gewinn: Bei zwei Fassungen im Ordner will niemand jedes Mal neu waehlen. */
+  try{ localStorage.setItem(FILMWAHL, name); }catch(e){}
+  drop.classList.add("hide");
+  vid.load();
+}
+function filmeAnbieten(filme){
+  var box=document.getElementById("filmListe");
+  box.innerHTML='<span class="fltitel">Im Projektordner gefunden</span>'
+    + filme.map(function(f){
+        var g = f.groesse >= 1073741824
+          ? (f.groesse/1073741824).toFixed(1).replace(".",",") + " GB"
+          : Math.max(1, Math.round(f.groesse/1048576)) + " MB";
+        return '<button type="button" class="flknopf" data-film="'+esc(f.name)+'">'
+          + esc(f.name) + ' <i>' + g + '</i></button>';
+      }).join("");
+  box.style.display="";
+}
+function filmeSuchen(){
+  fetch("filme?t="+Date.now(), {cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error("weg"); return r.json(); })
+    .then(function(d){
+      var filme=(d && d.filme) || [];
+      if(!filme.length || haveFile()) return;
+      var gemerkt=null;
+      try{ gemerkt=localStorage.getItem(FILMWAHL); }catch(e){}
+      var treffer=filme.filter(function(f){ return f.name===gemerkt; })[0];
+      if(treffer) return filmAusOrdner(treffer.name);
+      if(filme.length===1) return filmAusOrdner(filme[0].name);
+      filmeAnbieten(filme);          /* mehrere: einmal waehlen, dann gemerkt */
+    })
+    .catch(function(){ /* ohne Server bleibt der Dateidialog der Weg */ });
+}
+document.getElementById("filmListe").addEventListener("click", function(e){
+  var b=e.target.closest && e.target.closest(".flknopf");
+  if(b) filmAusOrdner(b.getAttribute("data-film"));
+});
+
 /* ---------- Projekte ----------
    Die Liste kommt vom Server: nur er sieht Projekte.txt. Auch die Kacheln
    liefert er — der Browser auf Port 8794 darf nicht in den Ordner von 8795
@@ -5446,7 +5516,7 @@ function projekteZeigen(stoerung){
     var bild = p.kachel ? ' style="background-image:url(kachel?p='+p.nr+'&t='+t+')"' : '';
     return '<button type="button" class="kachel'+(p.dies?' dies':'')+(p.da?'':' fehlt')+'"'
       + ' data-port="'+p.port+'" title="'+esc(p.ordner)+'">'
-      + '<span class="bild"'+bild+'>'+(p.kachel?'':'ohne Kachel')+'</span>'
+      + '<span class="bild"'+bild+'>'+(p.kachel?'':'ohne Bild')+'</span>'
       + '<span class="nam">'+esc(p.name)+'</span>'
       + '<span class="zst">Port '+p.port
       + (p.dies?' · <b>hier</b>':(p.laeuft?' · läuft':''))
@@ -5475,8 +5545,8 @@ document.getElementById("projKachel").addEventListener("click", function(){
     if(!bl){ toast("Bild konnte nicht gelesen werden"); return; }
     fetch("kachel", {method:"POST", headers:{"Content-Type":"image/jpeg"}, body:bl})
       .then(function(r){ if(!r.ok) throw new Error(r.status);
-                         toast("Kachel aufgenommen"); projekteLaden(); })
-      .catch(function(){ toast("Kachel nicht gespeichert — läuft der Takewrite-Server?"); });
+                         toast("Titelbild aufgenommen"); projekteLaden(); })
+      .catch(function(){ toast("Titelbild nicht gespeichert — läuft der Takewrite-Server?"); });
   }, "image/jpeg", 0.72);
 });
 
@@ -5513,6 +5583,7 @@ document.getElementById("projForm").addEventListener("submit", function(e){
 document.getElementById("rohbuchOben").addEventListener("click", rohbuchWaehlen);
 
 projekteLaden();
+filmeSuchen();
 
 var demoGesichertBei = -1;
 function demoOffen(){
