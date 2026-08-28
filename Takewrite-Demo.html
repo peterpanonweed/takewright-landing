@@ -645,6 +645,17 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   border:1px solid var(--rule);border-radius:4px}
 .ordnerzeile{display:flex;gap:6px;align-items:stretch}
 .ordnerzeile input{flex:1;min-width:0}
+.ordnerwahl{border:1px solid var(--rule);border-radius:5px;padding:8px;
+  background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.owkopf{display:flex;gap:8px;align-items:center;font-family:var(--font-mono);
+  font-size:10.5px;color:var(--ink-3);word-break:break-all}
+.owliste{max-height:190px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.owzeile{text-align:left;font:inherit;font-size:12.5px;color:var(--ink);
+  background:none;border:0;border-radius:4px;padding:5px 7px;cursor:pointer}
+.owzeile:hover{background:var(--surface-2)}
+.owzeile.mitfilm{font-weight:600}
+.owzeile i{font-style:normal;font-family:var(--font-mono);font-size:9.5px;
+  color:var(--good);margin-left:7px}
 
 /* Die eingeklappte Tastenkunde */
 .tastenspick{margin-top:10px}
@@ -893,10 +904,24 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           <label>Name<input type="text" id="projName" spellcheck="false" autocomplete="off" placeholder="wie der Film heißt"></label>
           <label>Ordner
             <span class="ordnerzeile">
-              <input type="text" id="projOrdner" spellcheck="false" autocomplete="off" placeholder="noch keiner gewählt">
-              <button type="button" class="mini" id="projDurchsuchen">Durchsuchen…</button>
+              <input type="text" id="projOrdner" spellcheck="false" autocomplete="off" placeholder="unten wählen — oder Pfad einfügen">
+              <button type="button" class="mini" id="projDurchsuchen">Wählen…</button>
             </span>
           </label>
+          <!-- Der Ordnerwaehler lebt in der Seite, nicht in einem Fremdfenster:
+               Ein Windows-Dialog, den der Server aufmacht, bekommt kein
+               Vordergrundrecht und bleibt unsichtbar. -->
+          <div class="ordnerwahl" id="ordnerWahl" style="display:none">
+            <div class="owkopf">
+              <button type="button" class="mini" id="owHoch">▲ höher</button>
+              <span id="owPfad"></span>
+            </div>
+            <div class="owliste" id="owListe"></div>
+            <div class="btnrow">
+              <span class="hint" style="flex:1;margin:0" id="owHinweis"></span>
+              <button type="button" class="mini" id="owNehmen">Diesen Ordner nehmen</button>
+            </div>
+          </div>
           <div class="btnrow">
             <span class="hint" style="flex:1;margin:0">Im Ordner müssen die Filmdatei und eine Untertiteldatei liegen.</span>
             <button type="button" class="mini" id="projAbbruch">Abbrechen</button>
@@ -5742,28 +5767,62 @@ document.getElementById("projKachel").addEventListener("click", function(){
 document.getElementById("projAbbruch").addEventListener("click", function(){
   projektFormularZeigen(false);
 });
-/* Der Ordnerdialog kommt vom Server: Ein Browser gibt keinen Pfad heraus —
-   er darf es nicht, und das ist richtig so. Der Server sitzt auf demselben
-   Rechner und darf fragen. */
-document.getElementById("projDurchsuchen").addEventListener("click", function(){
-  var k=this;
-  k.disabled=true; k.textContent="Fenster ist offen…";
-  fetch("ordnerwaehlen", {method:"POST"})
+/* ---------- Ordner wählen, in der Seite ----------
+   Ein Browser gibt keinen Pfad heraus — er darf es nicht, und das ist richtig
+   so. Der Umweg ueber den Windows-Ordnerdialog schlug fehl: Ein Vorgang ohne
+   Vordergrundrecht bekommt kein Fenster, der Dialog lag unsichtbar hinter
+   allem. Also blaettert die App selbst; der Server sagt nur, was da ist. */
+function ordnerLaden(p){
+  fetch("ordner?p="+encodeURIComponent(p||"")+"&t="+Date.now(), {cache:"no-store"})
     .then(function(r){ return r.json(); })
     .then(function(d){
-      if(d && d.ok && d.ordner){
-        var f=document.getElementById("projOrdner");
-        f.value=d.ordner;
-        var n=document.getElementById("projName");
-        /* Der Ordnername ist fast immer der Filmtitel — als Vorschlag gut
-           genug, und er laesst sich ueberschreiben. */
-        if(!n.value.trim()) n.value=d.ordner.replace(/[\\/]+$/,"").split(/[\\/]/).pop();
-      } else if(d && !d.ok){
-        toast(d.grund || "Kein Ordner gewählt");
-      }
+      if(!d || d.ok===false){ toast((d&&d.grund)||"Ordner nicht lesbar"); return; }
+      var aktuell=d.aktuell||"";
+      document.getElementById("owPfad").textContent = aktuell || "Laufwerke und bekannte Orte";
+      var hoch=document.getElementById("owHoch");
+      hoch.style.display = d.hoch ? "" : "none";
+      hoch.setAttribute("data-hoch", d.hoch||"");
+      document.getElementById("owNehmen").style.display = aktuell ? "" : "none";
+      document.getElementById("owNehmen").setAttribute("data-nimm", aktuell);
+      document.getElementById("owHinweis").textContent = !aktuell ? ""
+        : (d.hatFilm ? "Hier liegt ein Film."
+                     : "Hier liegt kein Film — vielleicht in einem Unterordner?");
+      var l=d.ordner||[];
+      document.getElementById("owListe").innerHTML = l.length
+        ? l.map(function(o){
+            return '<button type="button" class="owzeile'+(o.film?" mitfilm":"")+'"'
+              + ' data-hin="'+esc(o.pfad)+'">'+esc(o.name)
+              + (o.film?' <i>Film</i>':'')+'</button>';
+          }).join("")
+        : '<div class="empty-note">— keine Unterordner —</div>';
     })
-    .catch(function(){ toast("Ordnerdialog nicht möglich — läuft der Takewrite-Server?"); })
-    .then(function(){ k.disabled=false; k.textContent="Durchsuchen…"; });
+    .catch(function(){ toast("Ordner nicht lesbar — läuft der Takewrite-Server?"); });
+}
+document.getElementById("projDurchsuchen").addEventListener("click", function(){
+  var w=document.getElementById("ordnerWahl");
+  var auf = w.style.display==="none";
+  w.style.display = auf ? "" : "none";
+  this.textContent = auf ? "Zuklappen" : "Wählen…";
+  if(auf) ordnerLaden(document.getElementById("projOrdner").value.trim());
+});
+document.getElementById("owListe").addEventListener("click", function(e){
+  var z=e.target.closest && e.target.closest(".owzeile");
+  if(z) ordnerLaden(z.getAttribute("data-hin"));
+});
+document.getElementById("owHoch").addEventListener("click", function(){
+  ordnerLaden(this.getAttribute("data-hoch"));
+});
+document.getElementById("owNehmen").addEventListener("click", function(){
+  var p=this.getAttribute("data-nimm")||"";
+  if(!p) return;
+  document.getElementById("projOrdner").value=p;
+  var n=document.getElementById("projName");
+  /* Der Ordnername ist fast immer der Filmtitel — als Vorschlag gut genug,
+     Unterstriche zu Leerzeichen, und überschreibbar bleibt er ohnehin. */
+  if(!n.value.trim())
+    n.value=p.replace(/[\\/]+$/,"").split(/[\\/]/).pop().replace(/[_]+/g," ").trim();
+  document.getElementById("ordnerWahl").style.display="none";
+  document.getElementById("projDurchsuchen").textContent="Wählen…";
 });
 document.getElementById("projForm").addEventListener("submit", function(e){
   e.preventDefault();
