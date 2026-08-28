@@ -5768,7 +5768,9 @@ function projekteZeigen(stoerung){
   box.innerHTML=projekte.map(function(p){
     var bild = p.kachel ? ' style="background-image:url(kachel?p='+p.nr+'&t='+t+')"' : '';
     return '<button type="button" class="kachel'+(p.dies?' dies':'')+(p.da?'':' fehlt')+'"'
-      + ' data-port="'+p.port+'" title="'+esc(p.ordner)+'">'
+      + ' data-port="'+p.port+'" data-nr="'+p.nr+'"'
+      + (p.laeuft?'':' data-schlaeft="1"')
+      + ' title="'+esc(p.ordner)+'">'
       /* Kein Kreuz am laufenden Projekt: Man kann nicht den Ast absaegen,
          auf dem man sitzt — und der Server lehnt es ohnehin ab. */
       + (p.dies ? '' : '<span class="weg" data-weg="'+p.nr+'"'
@@ -5832,7 +5834,20 @@ document.getElementById("projKacheln").addEventListener("click", function(e){
   sichern();
   stelleMerken();
   einstellungenAbschicken(true);      /* Offenes noch loswerden, bevor es fort ist */
-  location.href="http://localhost:"+k.getAttribute("data-port")+"/Takewright.html";
+  var wohin="http://localhost:"+k.getAttribute("data-port")+"/Takewright.html";
+  /* Laeuft der Server dieses Projekts nicht, fuehrte der Klick bisher auf eine
+     Adresse, auf der niemand horcht — Fehlerseite, App weg, sah aus wie ein
+     Absturz. Also erst hochfahren, dann hinuebergehen. */
+  if(!k.getAttribute("data-schlaeft")){ location.href=wohin; return; }
+  toast("Projekt wird gestartet …");
+  fetch("projekt/starten", {method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({nr:+k.getAttribute("data-nr")})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d && d.ok) location.href=wohin;
+      else toast("Nicht gestartet: "+((d&&d.grund)||"unbekannter Grund"));
+    })
+    .catch(function(){ toast("Nicht gestartet — läuft der Takewrite-Server?"); });
 });
 
 document.getElementById("projKachel").addEventListener("click", function(){
