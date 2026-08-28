@@ -3748,20 +3748,36 @@ var MIT_SERVER = false;
      genannt hat. Der Server listet den Ordner auf — also nachsehen statt raten. */
   var kandidaten=["transkript_de.srt","transkript.srt","untertitel.srt","rohbuch.srt"];
 
-  fetch("./?t="+Date.now(), {cache:"no-store"})
-    .then(function(r){ return r.ok ? r.text() : ""; })
-    .catch(function(){ return ""; })
-    .then(function(liste){
-      var gefunden=[], m, re=/href="([^"]+\.srt)"/gi;
-      while((m=re.exec(liste))){
-        try{ gefunden.push(decodeURIComponent(m[1])); }catch(e){ gefunden.push(m[1]); }
+  /* Erst den Server fragen — der sieht auch in Unterordner. Kennt er den Weg
+     nicht (aeltere Fassung, oder ein fremder Webserver wie in der Demo),
+     bleibt die Ordnerauflistung als Rueckfall; die sieht nur eine Ebene. */
+  fetch("untertitel?t="+Date.now(), {cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(d){
+      return (d.untertitel||[]).map(function(u){ return u.pfad; });
+    })
+    .catch(function(){
+      return fetch("./?t="+Date.now(), {cache:"no-store"})
+        .then(function(r){ return r.ok ? r.text() : ""; })
+        .catch(function(){ return ""; })
+        .then(function(liste){
+          var raus=[], m, re=/href="([^"]+\.srt)"/gi;
+          while((m=re.exec(liste))){
+            try{ raus.push(decodeURIComponent(m[1])); }catch(e){ raus.push(m[1]); }
+          }
+          return raus;
+        });
+    })
+    .then(function(gefunden){
+      /* Deutsche Fassungen zuerst, die Originalsprache ist der Rueckfall.
+         Und eine bereinigte Fassung schlaegt die rohe: Wer sich die Muehe
+         gemacht hat, sie aufzuraeumen, will mit ihr arbeiten. Danebengegriffen
+         ist kein Drama — "Andere Datei…" ueber der Buchspalte wechselt. */
+      function rang(n){
+        return (/(^|[_\- ])de([_\-. ]|$)|deutsch/i.test(n) ? 0 : 2)
+             + (/bereinigt|clean|korrigiert/i.test(n) ? 0 : 1);
       }
-      /* Deutsche Fassungen zuerst — die Originalsprache ist der Rueckfall */
-      gefunden.sort(function(a,b){
-        var da=/(^|[_\- ])de([_\-. ]|$)|deutsch/i.test(a)?0:1;
-        var db=/(^|[_\- ])de([_\-. ]|$)|deutsch/i.test(b)?0:1;
-        return da-db || a.localeCompare(b);
-      });
+      gefunden.sort(function(a,b){ return rang(a)-rang(b) || a.localeCompare(b); });
       gefunden.forEach(function(n){ if(kandidaten.indexOf(n)<0) kandidaten.push(n); });
       weiter(0);
     });
