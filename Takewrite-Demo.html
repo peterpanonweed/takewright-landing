@@ -3768,7 +3768,14 @@ var MIT_SERVER = false;
 
   function weiter(k){
     if(k>=kandidaten.length){
-      anfangZeigen();
+      /* Keine Untertiteldatei im Ordner — das heisst NICHT, dass es kein Buch
+         gibt. Wer sein Rohbuch von woanders geladen hat, hat keine .srt im
+         Projektordner; die Zeilen stehen aber vollstaendig in
+         takewrite-stand.json. Bis zum 29.08.2026 hing das Holen des Standes
+         hinter dem Finden der Untertitel: 1158 geschriebene Zeilen lagen auf
+         der Platte und wurden nie geholt, weil eine Datei fehlte, die fuer
+         sie gar nicht gebraucht wird. */
+      standOhneUntertitel();
       return;
     }
     /* Frischemarker und no-store: sonst liefert der Browser eine alte Fassung
@@ -3841,6 +3848,45 @@ document.addEventListener("click", function(e){
   if(w.getAttribute("data-weiche")==="rohbuch"){ weicheBeantwortet(); rohbuchWaehlen(); }
   else leeresBlattWaehlen();
 });
+
+/* Ein Buch ohne Untertiteldatei im Ordner.
+
+   standLaden() FUEGT den gesicherten Stand in vorhandene Zeilen EIN — es
+   braucht also welche. Wer sein Rohbuch von woanders geladen hat, hat keine
+   .srt im Projektordner, und dann gibt es nichts, worin eingefuegt werden
+   koennte. Aufbauen kann nur standAnwenden(): Der Stand traegt die Zeilen ja
+   selbst, mit Text, Zeiten und Rollen.
+
+   Bis zum 29.08.2026 wurde in diesem Fall gar nichts geholt: 1158
+   geschriebene Zeilen lagen im Projektordner und blieben liegen, weil eine
+   Datei fehlte, die fuer sie nicht gebraucht wird. */
+function standOhneUntertitel(){
+  function brauchbar(d){
+    return (d && d.v===2 && (d.zeilen||[]).length) ? d : null;
+  }
+  return fetch(DATEI_STAND+"?t="+Date.now(), {cache:"no-store"})
+    .then(function(r){ return r.ok ? r.text() : null; })
+    .catch(function(){ return null; })
+    .then(function(text){
+      var datei=null;
+      if(text){ try{ datei=brauchbar(JSON.parse(text)); }catch(e){} }
+      var hier=null;
+      try{ hier=brauchbar(JSON.parse(localStorage.getItem(SPEICHER)||"null")); }catch(e){}
+      /* Der juengere gewinnt — dieselbe Regel wie sonst auch */
+      var nimm = !datei ? hier : !hier ? datei
+               : ((Number(hier.stand)||0) >= (Number(datei.stand)||0) ? hier : datei);
+      if(!nimm){ anfangZeigen(); return; }
+      standAnwenden(nimm);
+      if(nimm===datei && text){
+        try{ localStorage.setItem(SPEICHER, text); }catch(e){}
+        letzterInhalt = inhaltAus(text);
+      }
+      standAufPlatte = !!datei;
+      trRender();
+      toast("Stand aus dem Projektordner geholt — "+cues.length+" Zeilen");
+    })
+    .catch(function(){ anfangZeigen(); });
+}
 
 function anfangZeigen(){
   trList.innerHTML =
