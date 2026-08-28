@@ -1301,6 +1301,14 @@ function loadFile(f){
   if(tf && !tf.value.trim()){ tf.value=f.name.replace(/\.[^.]+$/,""); sichernGebremst(); }
   drop.classList.add("hide");
   vid.load();
+  /* Den Server bitten, diese Datei auf der Platte wiederzufinden. Der Browser
+     gibt ihren Pfad nicht heraus — ohne diesen Umweg waere der Film beim
+     naechsten Oeffnen weg, und mit ihm Stelle und Zusammenhang. */
+  fetch("film/merken", {method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({name:f.name, groesse:f.size})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if(d && d.ok) toast("Film gemerkt — beim nächsten Mal ist er gleich da"); })
+    .catch(function(){ /* ohne Server bleibt es beim Waehlen von Hand */ });
 }
 document.getElementById("pickbtn").addEventListener("click", function(){ fileInput.click(); });
 fileInput.addEventListener("change", function(e){ loadFile(e.target.files[0]); });
@@ -5645,10 +5653,10 @@ window.__tc = { framesToTC:framesToTC, tcToFrames:tcToFrames, PROFILES:PROFILES 
    Moeglich wurde das erst mit den Bereichsabrufen im Server: Ohne sie holt
    der Browser bei jedem Sprung den Film von vorn. */
 var FILMWAHL = "takewrite_film_" + location.pathname;
-function filmAusOrdner(name){
+function filmAusOrdner(name, adresse){
   bildrateGeprueft=false; bildrateProben=[];    /* neuer Film, neue Messung */
   if(vid.src && vid.src.slice(0,5)==="blob:") URL.revokeObjectURL(vid.src);
-  vid.src = encodeURIComponent(name);
+  vid.src = adresse || encodeURIComponent(name);
   fileName = name;
   document.getElementById("filename").textContent = name;
   var tf=document.getElementById("kfTitel");
@@ -5675,8 +5683,15 @@ function filmeSuchen(){
   fetch("filme?t="+Date.now(), {cache:"no-store"})
     .then(function(r){ if(!r.ok) throw new Error("weg"); return r.json(); })
     .then(function(d){
+      if(haveFile()) return;
+      /* Der von Hand gewaehlte Film liegt meist ausserhalb des Projektordners.
+         Der Server hat ihn sich gemerkt und liefert ihn unter /film aus —
+         mit denselben Bereichsabrufen wie alles andere. */
+      if(d && d.gemerkt && d.gemerkt.name){
+        return filmAusOrdner(d.gemerkt.name, "film");
+      }
       var filme=(d && d.filme) || [];
-      if(!filme.length || haveFile()) return;
+      if(!filme.length) return;
       var gemerkt=null;
       try{ gemerkt=localStorage.getItem(FILMWAHL); }catch(e){}
       var treffer=filme.filter(function(f){ return f.name===gemerkt; })[0];
