@@ -373,6 +373,15 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .grossertake small{font-size:9.5px;letter-spacing:.1em;text-transform:none;opacity:.72}
 .grossertake:hover{filter:brightness(1.12)}
 .grossertake:active{transform:translateY(1px)}
+/* Derselbe Rang wie Neuer Take, aber linksbuendig — er gehoert zur Spalte,
+   nicht in ihre Mitte. */
+.rohbuchgross{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+  background:var(--warm);color:#fff;border:0;border-radius:3px;cursor:pointer;
+  font-family:var(--font-mono);font-size:14px;letter-spacing:.12em;
+  text-transform:uppercase;padding:13px 16px;margin:10px 0 2px;text-align:left}
+.rohbuchgross small{font-size:9.5px;letter-spacing:.08em;text-transform:none;opacity:.85}
+.rohbuchgross:hover{filter:brightness(1.1)}
+.rohbuchgross:active{transform:translateY(1px)}
 .trrow:last-child{border-bottom:0}
 .trrow:hover{background:var(--surface-2)}
 
@@ -902,15 +911,23 @@ input[type=range]{width:100%;accent-color:var(--accent)}
         <div class="kacheln" id="projKacheln"><div class="empty-note">— wird geladen —</div></div>
         <form class="projneu" id="projForm" style="display:none">
           <label>Name<input type="text" id="projName" spellcheck="false" autocomplete="off" placeholder="wie der Film heißt"></label>
-          <label>Ordner
-            <span class="ordnerzeile">
-              <input type="text" id="projOrdner" spellcheck="false" autocomplete="off" placeholder="unten wählen — oder Pfad einfügen">
+          <div class="btnrow">
+            <span class="hint" style="flex:1;margin:0">Mehr braucht es nicht. Den Ordner für das Buch legt Takewrite selbst an; Film und Rohbuch holst du danach in der App.</span>
+            <button type="button" class="mini" id="projAbbruch">Abbrechen</button>
+            <button type="submit" class="mini">Anlegen</button>
+          </div>
+          <!-- Der Weg fuer den Fall, dass der Film schon einen eigenen Ordner
+               hat: Dann liegt das Buch beim Film, und beide laden von selbst.
+               Eingeklappt, weil es die Ausnahme ist und nicht die Regel.
+               Der Waehler lebt in der Seite, nicht in einem Fremdfenster — ein
+               Windows-Dialog, den der Server aufmacht, bekommt kein
+               Vordergrundrecht und bleibt unsichtbar. -->
+          <details class="klapp tastenspick">
+            <summary>Der Film hat schon einen eigenen Ordner?</summary>
+            <span class="ordnerzeile" style="margin-top:6px">
+              <input type="text" id="projOrdner" spellcheck="false" autocomplete="off" placeholder="leer lassen — oder Ordner wählen">
               <button type="button" class="mini" id="projDurchsuchen">Wählen…</button>
             </span>
-          </label>
-          <!-- Der Ordnerwaehler lebt in der Seite, nicht in einem Fremdfenster:
-               Ein Windows-Dialog, den der Server aufmacht, bekommt kein
-               Vordergrundrecht und bleibt unsichtbar. -->
           <div class="ordnerwahl" id="ordnerWahl" style="display:none">
             <div class="owkopf">
               <button type="button" class="mini" id="owHoch">▲ höher</button>
@@ -922,11 +939,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
               <button type="button" class="mini" id="owNehmen">Diesen Ordner nehmen</button>
             </div>
           </div>
-          <div class="btnrow">
-            <span class="hint" style="flex:1;margin:0">Im Ordner müssen die Filmdatei und eine Untertiteldatei liegen.</span>
-            <button type="button" class="mini" id="projAbbruch">Abbrechen</button>
-            <button type="submit" class="mini">Anlegen</button>
-          </div>
+          </details>
         </form>
       </div>
     </div>
@@ -1040,6 +1053,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
         <button class="mini" id="trPick" title="Rohbuch laden — SRT-Untertitel oder Textdatei">Textdatei…</button>
       </div>
       <div class="fortschritt"><i id="trBalken"></i></div>
+      <!-- Der Einstieg ins Buch, so gross wie er wiegt. Nur zu sehen, solange
+           kein Take da ist: Ein Rohbuch laedt man einmal, danach waere der
+           Knopf nur noch im Weg. Der kleine "Rohbuch…" in der Kopfzeile
+           bleibt fuer alle spaeteren Faelle. -->
+      <button type="button" class="rohbuchgross" id="rohbuchGross" style="display:none">
+        ROHBUCH IMPORTIEREN
+        <small>vorhandene Übersetzung als Gerüst · SRT, CSV, Excel, Word, Textdatei</small>
+      </button>
       <!-- Die Anmerkungen entstehen beim Schreiben und gehoeren aufs
            Titelblatt. Es ist zugleich das Kopffeld — ein Ort, ein Wert. -->
       <details class="notizen" id="notizen">
@@ -1705,6 +1726,10 @@ function trRender(){
      darauf fuegt ins Nichts ein. */
   werkzeugeVerbergen(); popupSchliessen(); letzterBereich=null;
   document.getElementById("trCnt").textContent = cues.length ? cues.length + " Zeilen" : "—";
+  /* Der grosse Import steht nur da, solange das Buch leer ist. Danach wäre er
+     Ballast — der kleine "Rohbuch…" in der Kopfzeile bleibt ja erreichbar. */
+  var rg=document.getElementById("rohbuchGross");
+  if(rg) rg.style.display = cues.length ? "none" : "";
   /* Der Wähler zeigt sich nur, wenn nichts da ist — sonst lädt die Datei von selbst */
   /* Frueher verschwand der Knopf, sobald etwas geladen war — wer die falsche
      Datei erwischt hatte, kam nicht mehr an die richtige. Er bleibt jetzt, und
@@ -5889,8 +5914,8 @@ document.getElementById("owNehmen").addEventListener("click", function(){
 document.getElementById("projForm").addEventListener("submit", function(e){
   e.preventDefault();
   var name=document.getElementById("projName").value.trim();
-  var ordner=document.getElementById("projOrdner").value.trim();
-  if(!name || !ordner){ toast("Name und Ordner werden beide gebraucht"); return; }
+  var ordner=document.getElementById("projOrdner").value.trim();   /* darf leer sein */
+  if(!name){ toast("Ein Name wird gebraucht"); document.getElementById("projName").focus(); return; }
   toast("Projekt wird angelegt …");
   fetch("projekt", {method:"POST", headers:{"Content-Type":"application/json"},
                     body:JSON.stringify({name:name, ordner:ordner})})
@@ -5908,6 +5933,10 @@ document.getElementById("projForm").addEventListener("submit", function(e){
 });
 
 document.getElementById("rohbuchOben").addEventListener("click", rohbuchWaehlen);
+document.getElementById("rohbuchGross").addEventListener("click", rohbuchWaehlen);
+/* Beim Start einmal richtig stellen — trRender läuft nicht in jedem Fall */
+(function(){ var rg=document.getElementById("rohbuchGross");
+  if(rg) rg.style.display = cues.length ? "none" : ""; })();
 
 projekteLaden();
 filmeSuchen();
