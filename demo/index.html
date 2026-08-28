@@ -51,6 +51,11 @@ header.cover{padding:20px 0 12px;border-bottom:2px solid var(--ink);display:flex
 /* Wortmarke: technische Schrift wie auf der Produktseite, damit App und
    Aussenauftritt dieselbe Sprache sprechen. */
 .marke{display:flex;align-items:baseline;gap:13px;flex-wrap:wrap}
+/* Eigene Zeile im Kopf: flex-basis:100% laesst ihn umbrechen, ohne dass
+   die Zeile darueber sich verschiebt. */
+.marke .demohinweis{flex:0 0 100%;font-family:var(--font-mono);font-size:10px;
+  letter-spacing:.03em;line-height:1.6;color:var(--ink-3);margin-top:-2px}
+.marke .demohinweis b{color:var(--warm);font-weight:400}
 /* Der Sicherungsknopf steht oben und faellt auf — er ist die Handlung,
    die man nach jeder Arbeitsstrecke tun soll. */
 .sicherbox{display:flex;align-items:center;gap:9px;margin-left:auto;flex-wrap:wrap}
@@ -646,6 +651,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <span class="claim">Synchronbücher am Bild schreiben</span>
     <span class="ver" style="color:var(--warm);border-color:var(--warm)" title="Demo-Fassung — auf 40 Takes begrenzt">1.0 · DEMO — 40 Takes</span>
     <span class="projekt" id="projektName" style="display:none"></span>
+    <span class="demohinweis">Zum Ausprobieren &mdash; hier sichert nichts von allein. Der gr&uuml;ne Knopf legt deinen Stand als Datei ab, <b>Stand einlesen</b> holt ihn zur&uuml;ck.</span>
   </div>
   <div class="sicherbox">
     <button id="punktKnopf" title="Den jetzigen Stand als Sicherungspunkt festhalten — er wird nie überschrieben">
@@ -5162,6 +5168,22 @@ function frageSchliessen(){ document.getElementById("frage").classList.remove("o
 
 /* Rechenkern nach aussen, damit die Timecode-Arithmetik nachprüfbar bleibt */
 window.__tc = { framesToTC:framesToTC, tcToFrames:tcToFrames, PROFILES:PROFILES };
+
+var demoGesichertBei = -1;
+function demoOffen(){
+  return demoBearbeitet() > 0 && undoStapel.length !== demoGesichertBei;
+}
+document.getElementById("punktKnopf").addEventListener("click", function(){
+  demoGesichertBei = undoStapel.length;
+});
+document.getElementById("ablageLesen").addEventListener("click", function(){
+  demoGesichertBei = undoStapel.length;
+});
+window.addEventListener("beforeunload", function(e){
+  if(!demoOffen()) return;
+  e.preventDefault();
+  e.returnValue = "";     /* aeltere Browser brauchen das noch */
+});
 
 loop();
 })();
