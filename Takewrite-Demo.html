@@ -628,6 +628,17 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   display:none;z-index:2}
 .kachel:hover .weg{display:block}
 .kachel .weg:hover{background:var(--ink)}
+/* Beschriftet, nicht nur ein Symbol: Ein Bild festzuhalten ist eine eigene
+   Handlung und soll auch so heissen. Sie sitzt unten im Bildfeld der eigenen
+   Kachel — dort, wo das Ergebnis erscheint. Ruhige Farbe, denn sie nimmt
+   nichts weg. */
+.kachel .knipsen{position:absolute;left:5px;right:5px;top:calc(56.25% - 26px);
+  border-radius:3px;background:var(--accent);color:#fff;
+  font-family:var(--font-mono);font-size:9.5px;letter-spacing:.08em;
+  text-transform:uppercase;line-height:21px;text-align:center;
+  display:none;z-index:2;cursor:pointer}
+.kachel:hover .knipsen{display:block}
+.kachel .knipsen:hover{background:var(--ink)}
 .kachel:hover{border-color:var(--warm)}
 .kachel.dies{border:2px solid var(--ink);cursor:default}
 .kachel.fehlt{opacity:.45}
@@ -894,7 +905,6 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <div class="panel">
       <div class="phead"><h3>Projekte</h3>
         <span class="cnt" id="projCnt"></span>
-        <button class="mini" id="projKachel" title="Das Bild, das gerade im Player steht, als Titelbild dieses Projekts festhalten">Titelbild aufnehmen</button>
       </div>
       <div class="pbody">
         <details class="klapp tastenspick" style="margin:0 0 10px">
@@ -5751,7 +5761,6 @@ function projekteZeigen(stoerung){
   var box=document.getElementById("projKacheln");
   document.getElementById("projCnt").textContent =
     projekte.length ? projekte.length+(projekte.length===1?" Projekt":" Projekte") : "";
-  document.getElementById("projKachel").style.display = stoerung ? "none" : "";
   if(stoerung==="alt"){
     box.innerHTML='<div class="empty-note">— Der Takewrite-Server läuft noch in einer '
       + 'älteren Fassung und kennt die Projektverwaltung nicht.<br>'
@@ -5771,10 +5780,17 @@ function projekteZeigen(stoerung){
       + ' data-port="'+p.port+'" data-nr="'+p.nr+'"'
       + (p.laeuft?'':' data-schlaeft="1"')
       + ' title="'+esc(p.ordner)+'">'
-      /* Kein Kreuz am laufenden Projekt: Man kann nicht den Ast absaegen,
-         auf dem man sitzt — und der Server lehnt es ohnehin ab. */
-      + (p.dies ? '' : '<span class="weg" data-weg="'+p.nr+'"'
-          + ' title="Aus der Liste nehmen — Ordner und Buch bleiben">&times;</span>')
+      /* Jede Kachel traegt genau eine Handlung. Am laufenden Projekt ist es
+         die Kamera — das Titelbild gehoert dorthin, wo es zu sehen ist, nicht
+         in eine Werkzeugleiste. An den anderen das Kreuz; sich selbst kann
+         kein Projekt stilllegen, und ein Bild aufnehmen kann nur das, dessen
+         Film gerade geladen ist. */
+      + (p.dies
+          ? '<span class="knipsen" data-bild="1"'
+            + ' title="Das Bild, das gerade im Player steht, als Titelbild dieses'
+            + ' Projekts festhalten">Titelbild</span>'
+          : '<span class="weg" data-weg="'+p.nr+'"'
+            + ' title="Aus der Liste nehmen — Ordner und Buch bleiben">&times;</span>')
       + '<span class="bild"'+bild+'>'+(p.kachel?'':'ohne Bild')+'</span>'
       + '<span class="nam">'+esc(p.name)+'</span>'
       + '<span class="zst">Port '+p.port
@@ -5798,8 +5814,13 @@ function projektFormularZeigen(auf){
 }
 
 document.getElementById("projKacheln").addEventListener("click", function(e){
-  /* Das Kreuz zuerst — es sitzt in der Kachel und wuerde sonst den Wechsel
+  /* Die Handlungen in der Kachel zuerst — sie wuerden sonst den Wechsel
      ausloesen, bevor man ueberhaupt gefragt wurde. */
+  if(e.target.closest && e.target.closest("[data-bild]")){
+    e.stopPropagation();
+    titelbildAufnehmen();
+    return;
+  }
   var weg=e.target.closest && e.target.closest("[data-weg]");
   if(weg){
     e.stopPropagation();
@@ -5850,7 +5871,7 @@ document.getElementById("projKacheln").addEventListener("click", function(e){
     .catch(function(){ toast("Nicht gestartet — läuft der Takewrite-Server?"); });
 });
 
-document.getElementById("projKachel").addEventListener("click", function(){
+function titelbildAufnehmen(){
   if(!haveFile()){ toast("Erst eine Filmdatei laden"); return; }
   var breit=480, hoch=Math.round(breit*(vid.videoHeight||9)/(vid.videoWidth||16));
   var c=document.createElement("canvas");
@@ -5864,7 +5885,7 @@ document.getElementById("projKachel").addEventListener("click", function(){
                          toast("Titelbild aufgenommen"); projekteLaden(); })
       .catch(function(){ toast("Titelbild nicht gespeichert — läuft der Takewrite-Server?"); });
   }, "image/jpeg", 0.72);
-});
+}
 
 document.getElementById("projAbbruch").addEventListener("click", function(){
   projektFormularZeigen(false);
@@ -5937,12 +5958,21 @@ document.getElementById("projForm").addEventListener("submit", function(e){
     .then(function(r){ return r.json(); })
     .then(function(d){
       if(!d || !d.ok){ toast("Nicht angelegt: "+((d&&d.grund)||"unbekannter Grund")); return; }
-      document.getElementById("projForm").style.display="none";
+      projektFormularZeigen(false);
       document.getElementById("projName").value="";
       document.getElementById("projOrdner").value="";
-      projekteLaden();
-      toast(d.schon ? "Dieses Projekt steht schon in der Liste — Port "+d.port
-                    : "Angelegt: "+d.name+" · Port "+d.port+" — Kachel anklicken zum Öffnen");
+      if(d.schon){
+        projekteLaden();
+        toast("Dieses Projekt steht schon in der Liste — Port "+d.port);
+        return;
+      }
+      /* Gleich hinueber: Wer ein Projekt anlegt, will hinein und nicht auf
+         eine Kachel zeigen. Vorher dasselbe Wegraeumen wie beim Kachelklick. */
+      toast("Angelegt: "+d.name+" — wird geöffnet …");
+      sichern();
+      stelleMerken();
+      einstellungenAbschicken(true);
+      location.href="http://localhost:"+d.port+"/Takewright.html";
     })
     .catch(function(){ toast("Nicht angelegt — läuft der Takewrite-Server?"); });
 });
