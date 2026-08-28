@@ -1044,6 +1044,76 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 (function(){
 "use strict";
 
+/* ---------- Einstellungen gehoeren dem Nutzer, nicht dem Projekt ----------
+   Der localStorage ist nach Adresse SAMT PORT getrennt. Weil jedes Projekt
+   auf einem eigenen Port sitzt — das schuetzt die Buecher voreinander —,
+   fing jedes neue Projekt mit Werkseinstellungen an: eigene Tastenbelegung
+   weg, Spaltenbreite weg, Fahrschule wieder da. Beim Projektwechsel soll
+   aber der Inhalt wechseln und nicht die Oberflaeche.
+
+   Darum liegen diese Werte beim Server, einmal fuer die Installation. Sie
+   werden hier ganz oben in den localStorage gespiegelt — VOR allem, was sie
+   liest. Der Abruf ist mit Absicht blockierend: Es sind ein paar hundert
+   Byte von localhost, und die Seite selbst kam gerade von demselben Server.
+   Asynchron gaebe es beim Oeffnen ein sichtbares Umspringen. */
+var GLOBALE_EINSTELLUNGEN = [
+  "takewright_regietasten",   /* die selbst belegten Regietasten */
+  "takewright_buchbreite",    /* Breite der Buchspalte */
+  "synchron_schrift",         /* Schriftgroesse im Buch */
+  "takewright_fahrschule",    /* Fahrschule weggeklickt */
+  "takewright_weiche",        /* "Womit faengst du an?" weggeklickt */
+  "takewright_mitlauf",       /* Liste folgt dem Film */
+  "takewright_ut",            /* Untertitel im Bild */
+  "takewright_utrolle",       /* Rolle im Untertitel */
+  "takewright_mengen",        /* Mengenrollen an/aus */
+  "takewright_mengengrenze"   /* ab wie vielen Takes */
+];
+(function einstellungenSpiegeln(){
+  try{
+    var x=new XMLHttpRequest();
+    x.open("GET", "einstellungen?t="+Date.now(), false);   /* blockierend */
+    x.send(null);
+    if(x.status!==200) return;
+    var d=JSON.parse(x.responseText);
+    GLOBALE_EINSTELLUNGEN.forEach(function(k){
+      if(typeof d[k]==="string") localStorage.setItem(k, d[k]);
+    });
+  }catch(e){ /* ohne Server bleibt es beim oertlichen Speicher */ }
+})();
+/* Schreibt oertlich UND zum Server. Ueberall dort benutzt, wo bisher direkt
+   localStorage.setItem stand — sonst liefe der Wert wieder auseinander.
+
+   Gesammelt und einmal geschickt: Einzeln gesendet ueberholen sich drei
+   schnelle Klicks auf A+ gegenseitig, und beim Server bleibt ein aelterer
+   Wert stehen. Im Test stand oertlich 30 und beim Server 26 — dauerhaft. */
+var einstellungOffen={}, einstellungT=0;
+function einstellungMerken(schluessel, wert){
+  wert=String(wert);
+  try{ localStorage.setItem(schluessel, wert); }catch(e){}
+  einstellungOffen[schluessel]=wert;
+  clearTimeout(einstellungT);
+  einstellungT=setTimeout(function(){ einstellungenAbschicken(false); }, 400);
+}
+function einstellungenAbschicken(dringend){
+  var d=einstellungOffen;
+  if(!Object.keys(d).length) return;
+  einstellungOffen={};
+  clearTimeout(einstellungT);
+  var text=JSON.stringify(d);
+  try{
+    /* Beim Verlassen der Seite kommt ein fetch nicht mehr an — der Beacon
+       schon: Der Browser stellt ihn zu, nachdem die Seite fort ist. */
+    if(dringend && navigator.sendBeacon){
+      navigator.sendBeacon("einstellungen",
+        new Blob([text], {type:"application/json"}));
+      return;
+    }
+    fetch("einstellungen", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body:text}).catch(function(){});
+  }catch(e2){}
+}
+window.addEventListener("pagehide", function(){ einstellungenAbschicken(true); });
+
 var PROFILES = {
   "23.976":{rate:24000/1001, base:24, df:false, name:"23,976"},
   "24":    {rate:24,          base:24, df:false, name:"24"},
@@ -1571,7 +1641,7 @@ function fahrschuleSchliessen(dauerhaft){
   });
   if(dauerhaft){
     fahrschuleAus=true;
-    try{ localStorage.setItem(FAHRSCHULE_WEG, "1"); }catch(e2){}
+    einstellungMerken(FAHRSCHULE_WEG, "1");
   }
 }
 
@@ -1699,7 +1769,7 @@ try{ mitlaufAn = localStorage.getItem("takewright_mitlauf")!=="0"; }catch(e){}
   k.checked=mitlaufAn;
   k.addEventListener("change", function(){
     mitlaufAn=k.checked;
-    try{ localStorage.setItem("takewright_mitlauf", mitlaufAn?"1":"0"); }catch(e){}
+    einstellungMerken("takewright_mitlauf", mitlaufAn?"1":"0");
     toast(mitlaufAn ? "Die Liste folgt dem Film wieder" : "Die Liste bleibt stehen");
   });
 })();
@@ -1804,8 +1874,8 @@ try{
 
 function mengenSichern(){
   try{
-    localStorage.setItem("takewright_mengen", mengenAn?"1":"0");
-    localStorage.setItem("takewright_mengengrenze", String(mengenGrenze));
+    einstellungMerken("takewright_mengen", mengenAn?"1":"0");
+    einstellungMerken("takewright_mengengrenze", mengenGrenze);
     localStorage.setItem("takewright_mengeneigen", JSON.stringify(mengenEigen));
     localStorage.setItem("takewright_mengenextra", JSON.stringify(mengenExtra));
   }catch(e){}
@@ -2100,7 +2170,7 @@ function markeTaste(m){
   return (v===undefined) ? m.standard : v;     /* "" heisst: keine Taste */
 }
 function tastenSichern(){
-  try{ localStorage.setItem(TASTEN_SPEICHER, JSON.stringify(eigeneTasten)); }catch(e){}
+  einstellungMerken(TASTEN_SPEICHER, JSON.stringify(eigeneTasten));
 }
 function markeNachTaste(buchstabe){
   if(!buchstabe) return null;
@@ -3002,7 +3072,7 @@ try{ var g=parseFloat(localStorage.getItem(GROESSE)); if(g>=13&&g<=40) buchGroes
 function groesseAnwenden(){
   trList.style.fontSize=buchGroesse+"px";
   document.getElementById("trGroesseAnzeige").textContent=Math.round(buchGroesse)+" px";
-  try{ localStorage.setItem(GROESSE, String(buchGroesse)); }catch(e){}
+  einstellungMerken(GROESSE, buchGroesse);
   popupSchliessen();
 }
 document.getElementById("trGroesser").addEventListener("click", function(){
@@ -3524,13 +3594,13 @@ function utZeigen(i){
 }
 utRolleKnopf.addEventListener("click", function(){
   utRolle=!utRolle;
-  try{ localStorage.setItem("takewright_utrolle", utRolle?"1":"0"); }catch(e){}
+  einstellungMerken("takewright_utrolle", utRolle?"1":"0");
   utAnwenden();
   toast(utRolle ? "Rollennamen im Untertitel" : "Untertitel ohne Rollennamen");
 });
 utKnopf.addEventListener("click", function(){
   utAn=!utAn;
-  try{ localStorage.setItem("takewright_ut", utAn?"1":"0"); }catch(e){}
+  einstellungMerken("takewright_ut", utAn?"1":"0");
   utAnwenden();
   toast(utAn?"Untertitel im Bild an":"Untertitel aus");
 });
@@ -3685,7 +3755,7 @@ try{ weicheAus = localStorage.getItem(WEICHE_WEG)==="1"; }catch(e){}
 /* Sie steht fest im Blatt — beantwortet heisst: sie geht weg und bleibt weg. */
 function weicheBeantwortet(){
   weicheAus=true;
-  try{ localStorage.setItem(WEICHE_WEG, "1"); }catch(e){}
+  einstellungMerken(WEICHE_WEG, "1");
   var e2=document.getElementById("fsWeiche");
   if(e2 && e2.parentNode) e2.parentNode.removeChild(e2);
 }
@@ -5163,7 +5233,7 @@ document.getElementById("exppdf").addEventListener("click", function(){
   function ende(){
     if(!aktiv) return; aktiv=false;
     griff.classList.remove("zieht"); document.body.classList.remove("zieht");
-    try{ localStorage.setItem(KEY, parseInt(getComputedStyle(document.documentElement).getPropertyValue("--buch"),10)); }catch(e){}
+    einstellungMerken(KEY, parseInt(getComputedStyle(document.documentElement).getPropertyValue("--buch"),10));
   }
   griff.addEventListener("pointerup", ende);
   griff.addEventListener("pointercancel", ende);
@@ -5470,6 +5540,43 @@ document.getElementById("filmListe").addEventListener("click", function(e){
   if(b) filmAusOrdner(b.getAttribute("data-film"));
 });
 
+/* ---------- Wo man war ----------
+   Wechselt man das Projekt, soll der Arbeitsplatz zurueckkommen, wie man ihn
+   verlassen hat — dieselbe Stelle im Film. Das gehoert zum Projekt und nicht
+   zum Nutzer, liegt also je Adresse, genau wie das Buch selbst.
+
+   Gemerkt wird nur die Zeit. Welche Zeile die laufende ist, ergibt sich aus
+   ihr von selbst; sie muss beim Zurueckkommen nur einmal ins Bild geholt
+   werden, weil die Liste dem Film sonst nur beim Abspielen folgt. */
+var STELLE = "takewrite_stelle_" + location.pathname;
+var stelleGeholt = false;
+function stelleMerken(){
+  /* Erst sichern, wenn die gemerkte Stelle geholt wurde. Sonst schreibt das
+     "pause", das beim Laden von selbst kommt, die 0 ueber den Stand von
+     gestern — und der Arbeitsplatz waere jedes Mal wieder am Anfang. */
+  if(!stelleGeholt || !haveFile() || !vid.duration) return;
+  try{ localStorage.setItem(STELLE, String(+vid.currentTime.toFixed(3))); }catch(e){}
+}
+function stelleHolen(){
+  if(stelleGeholt || !vid.duration) return;
+  stelleGeholt=true;
+  var zeit=NaN;
+  try{ zeit=parseFloat(localStorage.getItem(STELLE)); }catch(e){}
+  if(!(zeit>0) || zeit>=vid.duration) return;
+  vid.currentTime=zeit;
+  setTimeout(function(){
+    var el=trList.querySelector(".trrow.on");
+    if(el) zeileInSicht(el, true);
+  }, 250);
+}
+var stelleT=0;
+function stelleGebremst(){ clearTimeout(stelleT); stelleT=setTimeout(stelleMerken, 700); }
+vid.addEventListener("loadedmetadata", stelleHolen);
+vid.addEventListener("seeked", stelleGebremst);
+vid.addEventListener("pause",  stelleGebremst);
+/* Auch beim Schliessen des Fensters, nicht nur beim Wechseln ueber die Kachel */
+window.addEventListener("pagehide", stelleMerken);
+
 /* ---------- Projekte ----------
    Die Liste kommt vom Server: nur er sieht Projekte.txt. Auch die Kacheln
    liefert er — der Browser auf Port 8794 darf nicht in den Ordner von 8795
@@ -5553,8 +5660,11 @@ document.getElementById("projKacheln").addEventListener("click", function(e){
   if(k.classList.contains("dies")) return;
   if(k.classList.contains("fehlt")){ toast("Den Ordner dieses Projekts gibt es nicht mehr"); return; }
   /* Vor dem Wechsel sichern: Der laufende Stand haengt sonst noch in der
-     gebremsten Sicherung und ginge mit dem Seitenwechsel verloren. */
+     gebremsten Sicherung und ginge mit dem Seitenwechsel verloren. Die Stelle
+     im Film gleich mit — sie ist es, die den Arbeitsplatz zurueckbringt. */
   sichern();
+  stelleMerken();
+  einstellungenAbschicken(true);      /* Offenes noch loswerden, bevor es fort ist */
   location.href="http://localhost:"+k.getAttribute("data-port")+"/Takewright.html";
 });
 
