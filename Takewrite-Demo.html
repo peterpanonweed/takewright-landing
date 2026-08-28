@@ -1082,10 +1082,24 @@ var GLOBALE_EINSTELLUNGEN = [
     x.open("GET", "einstellungen?t="+Date.now(), false);   /* blockierend */
     x.send(null);
     if(x.status!==200) return;
-    var d=JSON.parse(x.responseText);
+    var d=JSON.parse(x.responseText), hoch={};
     GLOBALE_EINSTELLUNGEN.forEach(function(k){
-      if(typeof d[k]==="string") localStorage.setItem(k, d[k]);
+      if(typeof d[k]==="string"){ localStorage.setItem(k, d[k]); return; }
+      /* Der Server kennt den Wert nicht, dieser Browser schon — dann gilt,
+         was hier steht, und es wandert nach oben. Ohne diesen Weg blieben
+         alle Einstellungen, die VOR dieser Neuerung entstanden sind, fuer
+         immer in dem einen Projekt liegen, in dem sie gemacht wurden: Sie
+         werden ja nur beim Aendern verschickt, und geaendert hat sie
+         niemand mehr. Jedes neue Projekt finge wieder bei Werk an. */
+      var eigen=null;
+      try{ eigen=localStorage.getItem(k); }catch(e2){}
+      if(eigen!==null) hoch[k]=eigen;
     });
+    if(Object.keys(hoch).length){
+      fetch("einstellungen", {method:"POST",
+        headers:{"Content-Type":"application/json"}, body:JSON.stringify(hoch)})
+        .catch(function(){});
+    }
   }catch(e){ /* ohne Server bleibt es beim oertlichen Speicher */ }
 })();
 /* Schreibt oertlich UND zum Server. Ueberall dort benutzt, wo bisher direkt
