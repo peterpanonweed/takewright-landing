@@ -1756,13 +1756,30 @@ function rollenFarbenVerteilen(){
      denselben Ton, nur damit ein Passant einen eigenen behaelt. */
   if(reihe.length > ROLLENTOENE.length*RINGE)
     reihe=reihe.filter(function(n){ return !istMengenrolle(n); });
+  /* Uebernommene Zuordnungen koennen sich ueberschneiden: Wird eine Figur
+     geloescht, ihr Ton neu vergeben und die Figur spaeter wieder angelegt,
+     traegt sie den alten Ton noch bei sich. Wer mehr Takes hat, behaelt ihn;
+     die andere faellt unten in die normale Vergabe zurueck. Ohne diesen
+     Abgleich wuerde eine einmal entstandene Dopplung nie wieder verschwinden. */
+  var gesehenTon={};
+  reihe.forEach(function(n){
+    if(rollenFarben[n]!==undefined) return;
+    var t=rollenAuto[n];
+    if(t===undefined) return;
+    var vorher=gesehenTon[t];
+    if(vorher===undefined){ gesehenTon[t]=n; return; }
+    var schwach = (rollenZahl[n]||0) > (rollenZahl[vorher]||0) ? vorher : n;
+    delete rollenAuto[schwach];
+    if(schwach===vorher) gesehenTon[t]=n;
+  });
+
   /* Toene, die schon vergeben sind — von Hand oder aus einem frueheren Lauf */
   var belegt={};
   reihe.forEach(function(n){
     var v = (rollenFarben[n]!==undefined) ? rollenFarben[n] : rollenAuto[n];
     if(v!==undefined) belegt[v]=1;
   });
-  var naechster=0, ueberzaehlig=0;
+  var naechster=0, ueberzaehlig=0, ausweichReihe=null;
   function freierTon(fuer){
     var gesamt=ROLLENTOENE.length*RINGE;
     for(var k=0;k<gesamt;k++){
@@ -1770,16 +1787,30 @@ function rollenFarbenVerteilen(){
       var ton=tonAusRing(i2);
       if(!belegt[ton]){ naechster=i2+1; belegt[ton]=1; return ton; }
     }
-    /* Mehr Rollen als Toene. Der Notausgang verteilt sie REIHUM ueber alle
-       Toene. Die Fassung davor nahm "den Ton der seltensten vergebenen Rolle",
-       merkte sich die Wiederverwendung aber nicht — also fiel die Wahl jedes
-       Mal wieder auf dieselbe, und achtzehn Figuren landeten auf einer Farbe.
-       Reihum heisst: die erste ueberzaehlige Rolle teilt mit der ersten, die
-       zweite mit der zweiten. Nie mehr als zwei auf einem Ton, solange die
-       Zahl der Rollen unter dem Doppelten der Toene bleibt. */
-    var ton=tonAusRing(ueberzaehlig % gesamt);
+    /* Mehr Rollen als Toene — eine Dopplung ist jetzt unvermeidlich. Sie soll
+       aber die KLEINSTEN Rollen treffen, nicht die ersten.
+
+       Vorher lief der Notausgang reihum ab Ton eins. Weil die Toene nach dem
+       ersten Auftritt vergeben werden, sind die ersten Toene aber genau die
+       der tragenden Figuren: In einem Buch mit 87 Rollen teilte die groesste
+       Rolle mit 176 Takes ihre Farbe mit einer Nebenrolle, die zweitgroesste
+       mit einer einzigen Untertitelzeile. Der Notausgang traf zuverlaessig
+       die Falschen.
+
+       Jetzt wird die Liste der schon vergebenen Rollen nach Takes aufsteigend
+       durchgegangen, jede hoechstens einmal. Das "hoechstens einmal" ist
+       zugleich die Sicherung gegen den alten Fehler, bei dem achtzehn Figuren
+       auf einer Farbe landeten, weil immer wieder dieselbe seltenste Rolle
+       gewaehlt wurde. */
+    if(ausweichReihe===null){
+      ausweichReihe=Object.keys(rollenAuto).sort(function(a,b){
+        return (rollenZahl[a]||0)-(rollenZahl[b]||0);
+      });
+    }
+    if(!ausweichReihe.length) return ROLLENTOENE[0];
+    var partner=ausweichReihe[ueberzaehlig % ausweichReihe.length];
     ueberzaehlig++;
-    return ton;
+    return rollenAuto[partner];
   }
   reihe.forEach(function(n){
     if(rollenFarben[n]!==undefined) return;         /* von Hand gewaehlt */
@@ -2961,16 +2992,25 @@ trList.addEventListener("input", function(e){
   sichernGebremst();
 });
 
-/* Farbe der Zeile sofort nachziehen, ohne die ganze Liste neu zu bauen */
+/* Farbe der Zeile sofort nachziehen, ohne die ganze Liste neu zu bauen.
+   Alle DREI Groessen setzen, genau wie tonStil() es beim Vollaufbau tut.
+   Fehlte --rf-dl, fiel die Zeile auf den Vorgabewert 0% zurueck — und Ring 3
+   traegt denselben Farbton wie Ring 1 und unterscheidet sich NUR durch diesen
+   Versatz. Zwei verschiedene Figuren bekamen so exakt dieselbe Zeile. Beim
+   Loeschen muss der Versatz ebenso weg, sonst erbt die naechste Rolle in
+   dieser Zeile den Versatz der alten. */
 function zeileEinfaerben(zeile, name){
   var ton=rollenTon(name);
   if(ton===null){
     zeile.classList.remove("hatrolle");
-    zeile.style.removeProperty("--rf"); zeile.style.removeProperty("--rf-s");
+    zeile.style.removeProperty("--rf");
+    zeile.style.removeProperty("--rf-s");
+    zeile.style.removeProperty("--rf-dl");
   } else {
     zeile.classList.add("hatrolle");
     zeile.style.setProperty("--rf", tonHue(ton));
     zeile.style.setProperty("--rf-s", tonSat(ton));
+    zeile.style.setProperty("--rf-dl", tonLicht(ton));
   }
 }
 
@@ -3179,6 +3219,12 @@ function sichernGebremst(){ clearTimeout(sichernT); sichernT=setTimeout(sichern,
 function standInhalt(){
   return JSON.stringify({
     farben: rollenFarben,
+    /* Auch die automatisch vergebenen Toene wandern mit. Bis hierher wurden
+       sie bei jedem Laden aus der Reihenfolge des ersten Auftritts neu
+       ausgerechnet — kam eine Rolle dazu, rutschte alles dahinter einen Ton
+       weiter, und das halbe Buch sah anders aus. Gespeichert behaelt jede
+       Figur ihre Farbe. */
+    auto: rollenAuto,
     kopf: kopfLesen(),
     zeilen: cues.map(function(c){
       return { nr:c.nr, a:+c.a.toFixed(3), b:+c.b.toFixed(3),
@@ -3191,7 +3237,8 @@ function standInhalt(){
 function standVoll(inhalt){ return '{"v":2,"stand":'+Date.now()+','+inhalt.slice(1); }
 function inhaltAus(text){
   try{ var d=JSON.parse(text);
-       return JSON.stringify({farben:d.farben, kopf:d.kopf, zeilen:d.zeilen}); }
+       return JSON.stringify({farben:d.farben, auto:d.auto||{},
+                              kopf:d.kopf, zeilen:d.zeilen}); }
   catch(e){ return null; }
 }
 
@@ -3238,6 +3285,8 @@ function sichern(){
 
 function standAnwenden(d){
   rollenFarben = d.farben || {};
+  /* Aeltere Staende fuehren kein auto — dann wird wie bisher neu vergeben */
+  rollenAuto = (d.auto && typeof d.auto==="object") ? d.auto : {};
   kopfSchreiben(d.kopf);
   cues.length=0;
   (d.zeilen||[]).forEach(function(z){
@@ -3300,6 +3349,7 @@ function standLaden(){
   if(!d || !d.zeilen || d.v!==2) return false;
   /* Von Hand gewaehlte Rollenfarben zuerst, damit der Neuaufbau sie kennt */
   rollenFarben = (d.farben && typeof d.farben==="object") ? d.farben : {};
+  rollenAuto = (d.auto && typeof d.auto==="object") ? d.auto : {};
   kopfSchreiben(d.kopf);
 
   var nachNr={}, eigene=[];
