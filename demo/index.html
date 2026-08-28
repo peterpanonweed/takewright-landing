@@ -58,7 +58,7 @@ header.cover{padding:20px 0 12px;border-bottom:2px solid var(--ink);display:flex
 .marke .demohinweis b{color:var(--warm);font-weight:400}
 /* Der Sicherungsknopf steht oben und faellt auf — er ist die Handlung,
    die man nach jeder Arbeitsstrecke tun soll. */
-.sicherbox{display:flex;align-items:center;gap:9px;margin-left:auto;flex-wrap:wrap}
+.sicherbox{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 #punktKnopf{display:inline-flex;align-items:center;gap:8px;background:var(--good);
   color:var(--ground);border:0;border-radius:3px;cursor:pointer;font-family:var(--font-mono);
   font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 18px}
@@ -590,6 +590,36 @@ input[type=range]{width:100%;accent-color:var(--accent)}
    sieht man an einer Stelle, an der ein Leerzeichen verschwindet, nichts. */
 .pruefzeile .lz{font-style:normal;font-weight:700;opacity:.45}
 
+/* ---------- Projekte ----------
+   Die Kachel traegt ein Standbild aus dem Film. Das ist kein Schmuck: In
+   einer Liste aus Namen sucht man, in einer Reihe aus Bildern erkennt man. */
+.kacheln{display:grid;grid-template-columns:repeat(auto-fill,minmax(134px,1fr));gap:10px}
+.kachel{padding:0;text-align:left;font:inherit;color:inherit;background:var(--surface);
+  border:1px solid var(--rule);border-radius:6px;overflow:hidden;cursor:pointer;
+  display:flex;flex-direction:column}
+.kachel:hover{border-color:var(--warm)}
+.kachel.dies{border:2px solid var(--ink);cursor:default}
+.kachel.fehlt{opacity:.45}
+.kachel .bild{aspect-ratio:16/9;background:var(--surface-2) center/cover no-repeat;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:9.5px;letter-spacing:.06em;color:var(--ink-3)}
+.kachel .nam{padding:6px 8px 2px;font-size:12.5px;line-height:1.3}
+.kachel .zst{padding:0 8px 6px;font-family:var(--font-mono);font-size:9.5px;color:var(--ink-3)}
+.kachel .zst b{color:var(--good);font-weight:700}
+.projneu{display:flex;flex-direction:column;gap:8px;margin-top:12px;
+  padding-top:12px;border-top:1px solid var(--rule-soft)}
+.projneu label{display:flex;flex-direction:column;gap:4px;font-family:var(--font-mono);
+  font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.projneu input{font:inherit;font-size:13px;text-transform:none;letter-spacing:0;
+  color:var(--ink);background:var(--surface);padding:6px 8px;
+  border:1px solid var(--rule);border-radius:4px}
+
+/* Die eingeklappte Tastenkunde */
+.tastenspick{margin-top:10px}
+.tastenspick>summary{cursor:pointer;font-family:var(--font-mono);font-size:10px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:4px 0}
+.tastenspick>summary:hover{color:var(--ink)}
+
 /* Titelblatt-Felder */
 .kopffelder{display:flex;flex-direction:column;gap:10px}
 .kopffelder label{display:flex;flex-direction:column;gap:4px;font-family:var(--font-mono);
@@ -667,16 +697,21 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <span class="projekt" id="projektName" style="display:none"></span>
     <span class="demohinweis">Zum Ausprobieren &mdash; hier sichert nichts von allein. Der gr&uuml;ne Knopf legt deinen Stand als Datei ab, <b>Stand einlesen</b> holt ihn zur&uuml;ck.</span>
   </div>
+  <div class="covertail">
+    <div id="filename">— keine Datei —</div>
+    <div id="filemeta"></div>
+  </div>
+  <!-- Steht NACH covertail, damit es am rechten Rand endet: covertail traegt
+       das margin-left:auto und schiebt beide nach rechts. Solange beide ein
+       auto hatten, teilten sie sich den freien Platz und Sichern landete in
+       der Mitte. -->
   <div class="sicherbox">
+    <span id="punktStand"></span>
+    <button class="mini" id="rohbuchOben" title="Rohbuch laden — SRT-Untertitel, Textdatei, Excel oder Word">Rohbuch…</button>
     <button id="punktKnopf" title="Den jetzigen Stand als Sicherungspunkt festhalten — er wird nie überschrieben">
       <b>&#128190;</b> Sichern
     </button>
     <button class="mini" id="punktListe" title="Frühere Sicherungspunkte ansehen und zurückholen">Sicherungen…</button>
-    <span id="punktStand"></span>
-  </div>
-  <div class="covertail">
-    <div id="filename">— keine Datei —</div>
-    <div id="filemeta"></div>
   </div>
 </header>
 
@@ -796,6 +831,30 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       </details>
     </div>
 
+    <!-- Die Projekte lagen bisher nur im Starter — einem Konsolenmenue, das
+         man beim Hochfahren wegdrueckt. Hier stehen sie da, wo gearbeitet
+         wird. Jedes Projekt hat seinen eigenen Port und damit seinen eigenen
+         Arbeitsstand; ein Klick auf eine Kachel wechselt die Adresse. -->
+    <div class="panel">
+      <div class="phead"><h3>Projekte</h3>
+        <span class="cnt" id="projCnt"></span>
+        <button class="mini" id="projKachel" title="Das Bild, das gerade im Player steht, als Kachel dieses Projekts festhalten">Kachel aufnehmen</button>
+        <button class="mini" id="projNeu">Neues Projekt…</button>
+      </div>
+      <div class="pbody">
+        <div class="kacheln" id="projKacheln"><div class="empty-note">— wird geladen —</div></div>
+        <form class="projneu" id="projForm" style="display:none">
+          <label>Name<input type="text" id="projName" spellcheck="false" autocomplete="off" placeholder="wie der Film heißt"></label>
+          <label>Ordner<input type="text" id="projOrdner" spellcheck="false" autocomplete="off" placeholder="Pfad einfügen — im Explorer die Adresszeile kopieren"></label>
+          <div class="btnrow">
+            <span class="hint" style="flex:1;margin:0">Im Ordner müssen die Filmdatei und eine Untertiteldatei liegen.</span>
+            <button type="button" class="mini" id="projAbbruch">Abbrechen</button>
+            <button type="submit" class="mini">Anlegen</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <div class="panel">
       <div class="phead"><h3>Ausgabe</h3></div>
       <div class="pbody">
@@ -817,6 +876,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           <button class="mini" id="standSichernJetzt" title="Den Arbeitsstand jetzt als Datei herunterladen — für ein zweites Gerät oder ein eigenes Archiv">Stand als Datei</button>
           <button class="mini" id="ablageLesen" title="Einen gesicherten Arbeitsstand (JSON-Datei) wieder einlesen">Stand einlesen…</button>
         </div>
+        <!-- Achtzehn Zeilen Tastenkunde standen hier dauerhaft offen. Wer sie
+             einmal gelesen hat, liest sie nie wieder — sie hielt nur Platz
+             besetzt, den die Arbeit braucht. Zugeklappt bleibt sie da. -->
+        <details class="klapp tastenspick">
+          <summary>Alle Tasten auf einen Blick</summary>
         <div class="keys">
           <b>Film</b> &nbsp;<kbd>A</kbd><kbd>D</kbd> 1 Sekunde · mit <kbd>Shift</kbd> 10 Sekunden<br>
           <kbd>←</kbd><kbd>→</kbd> 1 Bild · mit <kbd>Shift</kbd> 5 Bilder · <kbd>Leer</kbd> oder Klick aufs Bild — Abspielen/Anhalten · Vollbild: Schaltfläche oben rechts im Bild<br>
@@ -836,6 +900,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           <span style="margin-left:52px"><kbd>Tab</kbd> in die Regie-Leiste · <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> wählen · <kbd>Enter</kbd> einsetzen · <kbd>Esc</kbd> zurück</span><br>
           <span style="margin-left:52px">Rechtsklick auf die Rolle: Farbe und Umbenennen</span>
         </div>
+        </details>
       </div>
     </div>
     <div class="panel">
@@ -5316,6 +5381,101 @@ function frageSchliessen(){ document.getElementById("frage").classList.remove("o
 
 /* Rechenkern nach aussen, damit die Timecode-Arithmetik nachprüfbar bleibt */
 window.__tc = { framesToTC:framesToTC, tcToFrames:tcToFrames, PROFILES:PROFILES };
+
+/* ---------- Projekte ----------
+   Die Liste kommt vom Server: nur er sieht Projekte.txt. Auch die Kacheln
+   liefert er — der Browser auf Port 8794 darf nicht in den Ordner von 8795
+   sehen, und soll es auch nicht. Ohne Takewrite-Server (etwa in der Demo)
+   bleibt der Bereich leer statt kaputt. */
+var projekte=[];
+function projekteLaden(){
+  fetch("projekte?t="+Date.now(), {cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(d){ projekte=(d&&d.projekte)||[]; projekteZeigen(); })
+    .catch(function(){ projekte=[]; projekteZeigen(true); });
+}
+function projekteZeigen(ohneServer){
+  var box=document.getElementById("projKacheln");
+  document.getElementById("projCnt").textContent =
+    projekte.length ? projekte.length+(projekte.length===1?" Projekt":" Projekte") : "";
+  document.getElementById("projNeu").style.display = ohneServer ? "none" : "";
+  document.getElementById("projKachel").style.display = ohneServer ? "none" : "";
+  if(ohneServer){
+    box.innerHTML='<div class="empty-note">— nur mit dem Takewrite-Server —</div>'; return;
+  }
+  if(!projekte.length){ box.innerHTML='<div class="empty-note">— noch kein Projekt —</div>'; return; }
+  var t=Date.now();
+  box.innerHTML=projekte.map(function(p){
+    var bild = p.kachel ? ' style="background-image:url(kachel?p='+p.nr+'&t='+t+')"' : '';
+    return '<button type="button" class="kachel'+(p.dies?' dies':'')+(p.da?'':' fehlt')+'"'
+      + ' data-port="'+p.port+'" title="'+esc(p.ordner)+'">'
+      + '<span class="bild"'+bild+'>'+(p.kachel?'':'ohne Kachel')+'</span>'
+      + '<span class="nam">'+esc(p.name)+'</span>'
+      + '<span class="zst">Port '+p.port
+      + (p.dies?' · <b>hier</b>':(p.laeuft?' · läuft':''))
+      + (p.da?'':' · Ordner fehlt')+'</span></button>';
+  }).join("");
+}
+
+document.getElementById("projKacheln").addEventListener("click", function(e){
+  var k=e.target.closest && e.target.closest(".kachel");
+  if(!k || k.classList.contains("dies")) return;
+  if(k.classList.contains("fehlt")){ toast("Den Ordner dieses Projekts gibt es nicht mehr"); return; }
+  /* Vor dem Wechsel sichern: Der laufende Stand haengt sonst noch in der
+     gebremsten Sicherung und ginge mit dem Seitenwechsel verloren. */
+  sichern();
+  location.href="http://localhost:"+k.getAttribute("data-port")+"/Takewright.html";
+});
+
+document.getElementById("projKachel").addEventListener("click", function(){
+  if(!haveFile()){ toast("Erst eine Filmdatei laden"); return; }
+  var breit=480, hoch=Math.round(breit*(vid.videoHeight||9)/(vid.videoWidth||16));
+  var c=document.createElement("canvas");
+  c.width=breit; c.height=hoch;
+  try{ c.getContext("2d").drawImage(vid,0,0,breit,hoch); }
+  catch(err){ toast("Bild konnte nicht gelesen werden"); return; }
+  c.toBlob(function(bl){
+    if(!bl){ toast("Bild konnte nicht gelesen werden"); return; }
+    fetch("kachel", {method:"POST", headers:{"Content-Type":"image/jpeg"}, body:bl})
+      .then(function(r){ if(!r.ok) throw new Error(r.status);
+                         toast("Kachel aufgenommen"); projekteLaden(); })
+      .catch(function(){ toast("Kachel nicht gespeichert — läuft der Takewrite-Server?"); });
+  }, "image/jpeg", 0.72);
+});
+
+document.getElementById("projNeu").addEventListener("click", function(){
+  var f=document.getElementById("projForm");
+  var auf = f.style.display==="none";
+  f.style.display = auf ? "" : "none";
+  if(auf) document.getElementById("projName").focus();
+});
+document.getElementById("projAbbruch").addEventListener("click", function(){
+  document.getElementById("projForm").style.display="none";
+});
+document.getElementById("projForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var name=document.getElementById("projName").value.trim();
+  var ordner=document.getElementById("projOrdner").value.trim();
+  if(!name || !ordner){ toast("Name und Ordner werden beide gebraucht"); return; }
+  toast("Projekt wird angelegt …");
+  fetch("projekt", {method:"POST", headers:{"Content-Type":"application/json"},
+                    body:JSON.stringify({name:name, ordner:ordner})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d || !d.ok){ toast("Nicht angelegt: "+((d&&d.grund)||"unbekannter Grund")); return; }
+      document.getElementById("projForm").style.display="none";
+      document.getElementById("projName").value="";
+      document.getElementById("projOrdner").value="";
+      projekteLaden();
+      toast(d.schon ? "Dieses Projekt steht schon in der Liste — Port "+d.port
+                    : "Angelegt: "+d.name+" · Port "+d.port+" — Kachel anklicken zum Öffnen");
+    })
+    .catch(function(){ toast("Nicht angelegt — läuft der Takewrite-Server?"); });
+});
+
+document.getElementById("rohbuchOben").addEventListener("click", rohbuchWaehlen);
+
+projekteLaden();
 
 var demoGesichertBei = -1;
 function demoOffen(){
