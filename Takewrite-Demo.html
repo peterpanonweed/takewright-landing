@@ -115,6 +115,12 @@ header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
 .suchbox .suche:focus{border-color:var(--accent)}
 .suchbox .cnt{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-3);
   white-space:nowrap}
+.suchbox .nurrollen{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-2);background:none;
+  border:1px solid var(--rule);border-radius:3px;
+  padding:4px 8px;cursor:pointer}
+.suchbox .nurrollen:hover{border-color:var(--accent);color:var(--accent)}
+.suchbox .nurrollen.an{background:var(--accent);border-color:var(--accent);color:#fff}
 
 /* Die Ausgabemenues: der Knopf traegt die Liste unter sich */
 .ausgabe{position:relative;display:inline-flex}
@@ -873,8 +879,12 @@ input[type=range]{width:100%;accent-color:var(--accent)}
      und ist trotzdem aus jeder Scrolltiefe erreichbar. -->
 <div class="suchhalter">
   <div class="suchbox">
-    <span class="cnt" id="trCnt">—</span>
-    <input type="search" id="trSuche" class="suche" placeholder="Suchen: Rolle oder Text" spellcheck="false" autocomplete="off" title="Zeigt nur Zeilen, in denen Rolle oder Text das Gesuchte enthalten · Esc leert das Feld">
+    <span class="cnt" id="trCnt"></span>
+    <input type="search" id="trSuche" class="suche" placeholder="Suchen" spellcheck="false" autocomplete="off" title="Zeigt nur Zeilen, in denen das Gesuchte steht · Esc leert das Feld">
+    <!-- Gezielt nach Rollen suchen: Wer wissen will, wo eine Figur spricht,
+         will nicht jede Zeile, in der ihr Name zufaellig im Text vorkommt. -->
+    <button type="button" class="nurrollen" id="trNurRollen"
+      title="Nur in den Rollennamen suchen — nochmal klicken sucht wieder überall">Rollen</button>
   </div>
 </div>
 
@@ -1081,7 +1091,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           <kbd>←</kbd><kbd>→</kbd> 1 Bild · mit <kbd>Shift</kbd> 5 Bilder · <kbd>Leer</kbd> oder Klick aufs Bild — Abspielen/Anhalten · Vollbild: Schaltfläche oben rechts im Bild<br>
           <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd> Shuttle zurück / Stopp / vor — mehrfach drücken beschleunigt<br>
           <kbd>Pos1</kbd><kbd>Ende</kbd> Anfang und Schluss<br>
-          <b>Zeile</b> &nbsp;<b>&#9654;</b> Film springt zur Zeile · <b>Timecode 2&times;</b> Zeile bekommt die Filmzeit · <b>Rechtsklick</b> Zeit eintippen<br>
+          <b>Zeile</b> &nbsp;<b>&#9654;</b> Film springt zur Zeile · <b>Klick auf den Timecode</b> setzt die Filmzeit · <b>Rechtsklick</b> Zeit eintippen oder leeren<br>
           <b>Buch</b> &nbsp;<kbd>W</kbd><kbd>S</kbd> Zeile hoch und runter · <kbd>Enter</kbd> Zeit setzen<br>
           <kbd>E</kbd> oder <kbd>N</kbd> Neuer Take · <kbd>Esc</kbd> Auswahl lösen<br>
           <kbd>Strg</kbd>+<kbd>Z</kbd> Rückgängig · <kbd>Strg</kbd>+<kbd>Y</kbd> Wiederholen<br>
@@ -1130,9 +1140,18 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 
 
     <details class="panel klapp">
-      <summary class="phead"><h3>Tastenbelegung</h3>
+      <summary class="phead"><h3>Anleitung und Tastenbelegung</h3>
         <span class="cnt" id="belegungCnt"></span></summary>
       <div class="pbody">
+        <p class="hint"><b>Timecode setzen:</b> Den Film an die Stelle fahren, an der
+          der Einsatz beginnt, dann <b>einmal auf den Timecode der Zeile klicken</b> —
+          er übernimmt die Filmzeit sofort. Danebengegriffen? <b>Strg+Z</b> holt es
+          zurück.<br>
+          <b>Von Hand eintragen:</b> <b>Rechtsklick auf den Timecode</b> öffnet ein
+          Feld — Form <b>00:01:44:12</b>. Leert man das Feld und drückt Enter, wird
+          die Zeit wieder <b>zurückgenommen</b> und die Zeile zählt erneut als offen.<br>
+          <b>Zur Zeile springen:</b> Das <b>&#9654;</b> links in der Zeile setzt den
+          Film auf ihre Zeit.</p>
         <p class="hint">Die Regieangaben liegen ab Werk wie die Knöpfe der Leiste:
           <b>E R T</b> für die Pausen, <b>D F G</b> für ON/OFF/CONT, <b>C V B</b> für
           die Laute — drei Reihen unter der linken Hand. Gedrückt wird mit <b>Alt</b>.
@@ -1882,6 +1901,10 @@ function trRender(){
    Die Zeilen bleiben im Dokument — nur die Anzeige wird eingeschraenkt, damit
    Setzen, Umhaengen und Abspielen in der Treffermenge ganz normal gehen. */
 var trSuche=document.getElementById("trSuche");
+/* Nur in den Rollennamen suchen. Wer wissen will, wo eine Figur spricht, will
+   nicht jede Zeile, in der ihr Name zufaellig im Text vorkommt — bei einem
+   Buch mit 87 Rollen ist das der Unterschied zwischen Finden und Blaettern. */
+var nurRollen=false;
 function sucheAnwenden(){
   var q=(trSuche.value||"").trim().toLowerCase();
   var zeilen=trList.querySelectorAll(".trrow"), treffer=0;
@@ -1889,14 +1912,22 @@ function sucheAnwenden(){
     var el=zeilen[i];
     if(!q){ el.classList.remove("versteckt"); continue; }
     var c=cues[+el.getAttribute("data-tr")]; if(!c) continue;
-    var ok = (c.rolle||"").toLowerCase().indexOf(q)>=0 || nurText(c.text||"").toLowerCase().indexOf(q)>=0;
+    var inRolle = (c.rolle||"").toLowerCase().indexOf(q)>=0;
+    var ok = nurRollen ? inRolle
+           : (inRolle || nurText(c.text||"").toLowerCase().indexOf(q)>=0);
     el.classList.toggle("versteckt", !ok);
     if(ok) treffer++;
   }
   var cnt=document.getElementById("trCnt");
-  if(q){ cnt.textContent=treffer+" Treffer"; cnt.setAttribute("data-suche","1"); }
-  else if(cnt.getAttribute("data-suche")){ cnt.removeAttribute("data-suche"); trFortschritt(); }
+  cnt.textContent = q ? (treffer+(nurRollen?" Rollen-Treffer":" Treffer")) : "";
 }
+document.getElementById("trNurRollen").addEventListener("click", function(){
+  nurRollen=!nurRollen;
+  this.classList.toggle("an", nurRollen);
+  trSuche.placeholder = nurRollen ? "Rolle suchen" : "Suchen";
+  sucheAnwenden();
+  trSuche.focus();
+});
 trSuche.addEventListener("input", sucheAnwenden);
 trSuche.addEventListener("keydown", function(e){
   if(e.key==="Escape"){ trSuche.value=""; sucheAnwenden(); trSuche.blur(); }
@@ -3006,8 +3037,10 @@ function trFortschritt(){
     gesamt++; if(cues[i].gesetzt) n++;
   }
   document.getElementById("trBalken").style.width = gesamt ? (n/gesamt*100).toFixed(2)+"%" : "0";
-  document.getElementById("trCnt").textContent = gesamt ? (n+" / "+gesamt+" gesetzt") : "—";
-  /* Laeuft eine Suche, zeigt der Zaehler die Treffer, nicht den Fortschritt */
+  /* Die Zahl "x / y gesetzt" ist entfallen: Wie viele Timecodes schon stehen,
+     sagt der Balken darunter, und wissen muss es niemand auf die Zeile genau.
+     Der Zaehler zeigt nur noch Treffer, solange gesucht wird. */
+  document.getElementById("trCnt").textContent = "";
   if(typeof trSuche!=="undefined" && trSuche.value.trim()) sucheAnwenden();
   ausgeblendetPruefen();
   loeserPruefen();
@@ -3177,7 +3210,9 @@ function scharfMachen(i){
   if(i<0){ hint.innerHTML="—"; zeile2.classList.add("leer"); loeserPruefen(); return; }
   var el=zeileEl(i); if(el) el.classList.add("scharf");
   var b=bitcAt(vid.currentTime) || framesToTC(Math.round(vid.currentTime*prof().rate), prof());
-  hint.innerHTML='Zeile '+(i+1)+' scharf — nochmal klicken setzt sie auf <em>'+b+'</em>';
+  /* Ein Klick setzt inzwischen sofort. Hierher kommt man nur noch, wenn das
+     Setzen nicht ging — meist, weil kein Film geladen ist. */
+  hint.innerHTML='Zeile '+(i+1)+' gewählt — Filmzeit wäre <em>'+b+'</em>';
   zeile2.classList.remove("leer");
   loeserPruefen();
 }
@@ -3285,17 +3320,18 @@ trList.addEventListener("click", function(e){
     toast("Zeile ausgeblendet");
     e.stopPropagation(); return;
   }
-  if(e.target.closest("[data-stamp]")){          /* Timecode-Feld: scharf, dann setzen */
-    if(scharf===i){
-      /* Sofort setzen. Frueher wartete dieser Klick 260 ms ab, ob noch ein
-         Doppelklick folgt — der oeffnete dann die Bearbeitung. Beides vertrug
-         sich nicht: Zuegiges Klicken ist ein Doppelklick, und dann ging die
-         Bearbeitung auf, statt zu setzen. Der Doppelklick ist entfallen, also
-         auch die Wartezeit. Bearbeiten macht der Rechtsklick. */
-      zeitSetzen(vid.currentTime);
-    } else {
-      scharfMachen(i);
-    }
+  if(e.target.closest("[data-stamp]")){
+    /* EIN Klick setzt. Vorher waren es zwei — scharf machen, dann setzen —,
+       also eine eingebaute Rueckfrage. Bei einem Buch mit Hunderten
+       Einsaetzen ist das die Haelfte aller Klicks, und die Rueckfrage kostet
+       mehr, als sie schuetzt: Danebengegriffen holt Strg+Z es zurueck, und
+       der Rechtsklick auf den Timecode nimmt die Zeit ohnehin wieder weg.
+
+       scharfMachen() steht davor, weil zeitSetzen() ueber die scharfe Zeile
+       arbeitet. Fehlt der Film, meldet zeitSetzen das und die Zeile bleibt
+       scharf — dann ist der naechste Klick wie frueher der zweite Versuch. */
+    scharfMachen(i);
+    zeitSetzen(vid.currentTime);
   }
 });
 
