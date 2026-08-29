@@ -2782,7 +2782,6 @@ werkzeuge.addEventListener("contextmenu", function(e){
 werkzeuge.addEventListener("mousedown", function(e){
   if(e.target.closest("[data-anm]")){ e.preventDefault(); anmerkungEinfuegen(); return; }
   if(e.target.closest("[data-stumm]")){ e.preventDefault(); stummEinfuegen(); return; }
-  if(e.target.closest("[data-kursiv]")){ e.preventDefault(); kursivUmschalten(); return; }
   var b=e.target.closest("button[data-ein]");
   if(!b) return;
   e.preventDefault();                                     /* Fokus im Textfeld halten */
@@ -3557,6 +3556,19 @@ trList.addEventListener("focusout", function(e){
 });
 trList.addEventListener("keydown", function(e){
   var feld=e.target.getAttribute && e.target.getAttribute("data-feld");
+
+  /* Strg+I kursiv. Bisher machte das der Browser von sich aus — und je nach
+     Einstellung kam dabei ein <span> mit Formatangabe heraus statt eines <i>.
+     Genau das verschluckt der Bereiniger der App, die Auszeichnung waere beim
+     naechsten Zeichnen weg gewesen. kursivUmschalten() schaltet styleWithCSS
+     vorher ab und stellt damit sicher, dass ein <i> entsteht. */
+  if(feld==="text" && (e.ctrlKey||e.metaKey) && !e.altKey
+     && (e.key==="i" || e.key==="I")){
+    e.preventDefault();
+    werkzeugZiel=e.target;
+    kursivUmschalten();
+    return;
+  }
 
   /* Regieangaben auf den Funktionstasten — der zweite Weg neben Alt und
      Buchstabe. Tab bleibt frei: die Taste gehoert dem Springen zwischen den
