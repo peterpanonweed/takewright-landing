@@ -1854,7 +1854,7 @@ function zeitZelle(c){
   /* Der Punkt steht als eigenes Element mit fester Breite neben dem Timecode,
      nicht als Zeichen darin — sonst schiebt er die Ziffern aus der Spalte. */
   return '<button class="go" data-go title="ab hier abspielen">&#9654;</button>'
-       + '<span class="tcv" data-stamp title="Klick: scharf machen · nochmal: setzen · Rechtsklick: Zeit von Hand eintragen">'+tc+'</span>'
+       + '<span class="tcv" data-stamp title="Klick: Zeit aus dem Film setzen · Rechtsklick: Zeit von Hand eintragen">'+tc+'</span>'
        + '<span class="pkt" title="'+(c.gesetzt
             ? "Zeit von dir gesetzt — diese Zeile ist erledigt"
             : "Zeit noch aus der Textquelle, nicht von dir bestätigt")+'"></span>';
@@ -1894,7 +1894,7 @@ function fahrschuleHtml(){
   }
   return '<div class="fahrschule" id="fahrschule">'
     + kasten(4, "Timecode",
-        'Einmal klicken macht die Zeile scharf, <b>noch einmal</b> setzt sie auf die Stelle im Film.')
+        '<b>Ein Klick</b> setzt die Zeile auf die Stelle, an der der Film gerade steht.')
     + kasten(5, "Rolle",
         'Hineintippen oder aus der Liste wählen. Umbenennen gilt sofort überall.')
     + kasten(6, "Text",
@@ -3213,7 +3213,7 @@ function tcBearbeiten(span){
     if(fertig) return; fertig=true;
     var neu=document.createElement("span");
     neu.className="tcv"; neu.setAttribute("data-stamp","");
-    neu.title="Klick: scharf machen · nochmal: setzen · Rechtsklick: Zeit von Hand eintragen";
+    neu.title="Klick: Zeit aus dem Film setzen · Rechtsklick: Zeit von Hand eintragen";
     neu.textContent=voll.slice(0,8);
     feld.replaceWith(neu);
   }
@@ -3338,7 +3338,7 @@ function nachSortierenAnzeigen(c, vorher, wortGesetzt){
 }
 
 function zeitSetzen(zeitVorgabe){
-  if(scharf<0){ toast("Erst eine Zeile scharf machen"); return; }
+  if(scharf<0){ toast("Erst eine Zeile wählen"); return; }
   if(demoVoll(cues[scharf])) return;
   if(!haveFile()){ toast("Erst eine Filmdatei laden"); return; }
   /* Bei verzoegertem Setzen gilt der Abspielpunkt vom Klick, nicht der
