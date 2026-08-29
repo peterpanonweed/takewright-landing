@@ -784,7 +784,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .keys kbd{background:var(--surface-2);border:1px solid var(--rule);border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:var(--ink-2);font-size:10px}
 .colophon{margin-top:30px;padding-top:16px;border-top:1px solid var(--rule);font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink-3)}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);background:var(--ink);color:var(--ground);font-family:var(--font-mono);font-size:12px;letter-spacing:.05em;padding:11px 20px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50}
-.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+/* Platz fuer das Kreuz, das die Meldung schliesst */
+.toast{padding-right:38px}
 .toast.frage{bottom:72px;padding:13px 40px 13px 22px;z-index:90;font-size:13px;white-space:nowrap;max-width:calc(100vw - 40px)}
 .toast.frage.on{pointer-events:auto}
 .toast.frage .tk{font-size:12.5px;padding:8px 14px;margin-left:14px}
@@ -5694,10 +5696,21 @@ vid.addEventListener("pause", function(){
   if(shuttle>0){ shuttle=0; shuttleAnzeige.textContent=""; vid.playbackRate=1; }
 });
 
-var toastEl=document.getElementById("toast"), toastT=0;
+var toastEl=document.getElementById("toast");
+function toastSchliessen(){ toastEl.classList.remove("on"); }
 function toast(msg){
-  toastEl.textContent=msg; toastEl.classList.add("on");
-  clearTimeout(toastT); toastT=setTimeout(function(){ toastEl.classList.remove("on"); }, 2600);
+  /* Die Meldung bleibt stehen, bis man sie wegklickt. Vorher verschwand sie
+     nach 2,6 Sekunden — zu kurz, um einen Satz zu lesen und dabei aufs Bild
+     zu schauen, und wer gerade tippte, sah sie oft gar nicht. Eine neue
+     Meldung ersetzt die alte, es steht also immer hoechstens eine da. */
+  toastEl.textContent="";
+  toastEl.appendChild(document.createTextNode(msg));
+  var x=document.createElement("button");
+  x.type="button"; x.className="zu"; x.title="Meldung schließen";
+  x.innerHTML="&times;";
+  x.addEventListener("click", toastSchliessen);
+  toastEl.appendChild(x);
+  toastEl.classList.add("on");
 }
 /* Meldung mit einem Knopf fuer die andere Deutung — bleibt laenger stehen,
    verschwindet von allein, kostet nichts, wenn man sie ignoriert. */
