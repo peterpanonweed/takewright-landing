@@ -78,7 +78,10 @@ header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
    ab: Die Vorschau der Anmerkungen trieb die Zeile vorher auf zwei. */
 .phead.buchkopf{position:sticky;top:var(--kopf,59px);z-index:30;
   background:var(--surface);flex-wrap:nowrap;padding:7px 15px}
-.phead.buchkopf .schalter{white-space:nowrap;flex:0 0 auto}
+/* .schalter traegt width:100% — gedacht fuer die alte Werkzeugleiste, in der
+   es allein in seiner Zeile stand. Hier drueckte es alles andere auf null
+   Breite, auch die Anmerkungen. */
+.phead.buchkopf .schalter{white-space:nowrap;flex:0 0 auto;width:auto;padding:0}
 .phead.buchkopf .notizen{margin:0;border:0;background:none;
   flex:0 1 auto;min-width:0;overflow:hidden}
 .phead.buchkopf .notizen>summary{padding:0;white-space:nowrap;
