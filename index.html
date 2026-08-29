@@ -241,6 +241,27 @@ footer{padding:26px 0 46px;font-family:var(--mono);font-size:10.5px;letter-spaci
 .notiz{margin-top:26px;padding:16px 18px;background:var(--gut-soft);border-left:3px solid var(--gut);
   font-size:15px;color:var(--ink-2);font-family:var(--ui)}
 .notiz b{color:var(--ink)}
+
+/* ---- Video: erst auf Klick wird YouTube geladen ----
+   Bis dahin steht hier ein eigenes Bild und sonst nichts. Das ist keine
+   Bequemlichkeit, sondern die Bedingung dafuer, dass der Satz im Impressum
+   weiter stimmt: Diese Seite holt von sich aus nichts von Dritten. */
+.video{position:relative;border:1px solid var(--rule);border-radius:3px;
+  overflow:hidden;background:#06080a;aspect-ratio:16/9}
+.video iframe{display:block;width:100%;height:100%;border:0}
+.videostart{display:block;width:100%;height:100%;padding:0;border:0;
+  background:none;cursor:pointer;position:relative;font:inherit}
+.videostart img{display:block;width:100%;height:100%;object-fit:cover;
+  opacity:.7;transition:opacity .18s}
+.videostart:hover img{opacity:.95}
+.playknopf{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:72px;height:72px;border-radius:50%;background:rgba(8,10,12,.7);
+  border:1px solid rgba(255,255,255,.55);color:#fff;font-size:24px;
+  line-height:70px;text-align:center;padding-left:5px;transition:background .18s}
+.videostart:hover .playknopf{background:var(--accent);border-color:var(--accent)}
+.videotitel{position:absolute;left:0;right:0;bottom:0;padding:13px 15px;
+  font-family:var(--display);font-size:15px;color:#fff;text-align:left;
+  background:linear-gradient(transparent,rgba(4,6,8,.88))}
 </style>
 </head>
 <body>
@@ -496,11 +517,19 @@ footer{padding:26px 0 46px;font-family:var(--mono);font-size:10.5px;letter-spaci
     <p>Kein Player, keine Textverarbeitung daneben, kein drittes Fenster mit der
       Roh&uuml;bersetzung. Links l&auml;uft der Film, rechts entsteht das Buch &mdash; und beides
       sieht man gleichzeitig.</p>
-    <p>Diese Bilder sind aus einer laufenden Arbeit. Jede Figur tr&auml;gt ihre eigene
+    <p>Video und Bilder sind aus einer laufenden Arbeit. Jede Figur tr&auml;gt ihre eigene
       Farbe, ein gr&uuml;ner Punkt hei&szlig;t: diese Zeit hat der Autor best&auml;tigt. Regieangaben
       wie (OFF) oder (.) stehen mitten im Satz, wo der Sprecher sie braucht.</p>
-    <img src="tw_shot_voll.jpg" alt="Takewrite bei der Arbeit: Film links, Buch mit farbigen Rollen und bestätigten Zeiten rechts"
-      style="width:100%;border:1px solid var(--rule);border-radius:3px" loading="lazy">
+    <div class="video" id="video">
+      <button class="videostart" type="button"
+              aria-label="Video abspielen: Takewrite — Synchronbuch einfach schreiben">
+        <img src="tw_shot_voll.jpg" alt="Takewrite bei der Arbeit: Film links, Buch mit farbigen Rollen und bestätigten Zeiten rechts" loading="lazy">
+        <span class="playknopf" aria-hidden="true">&#9654;</span>
+        <span class="videotitel">Takewrite — Synchronbuch einfach schreiben</span>
+      </button>
+    </div>
+    <p class="kleingedruckt">Das Video liegt bei YouTube. Es wird erst geladen, wenn du
+      auf Abspielen klickst &mdash; vorher geht von dieser Seite keine Verbindung dorthin.</p>
     <div style="display:grid;grid-template-columns:1fr 1.45fr;gap:14px;margin-top:14px">
       <img src="tw_shot_buch.jpg" alt="Das Rollenmenü: alle Figuren mit ihrer Farbe und Take-Zahl — die wahrscheinlichste liegt der Hand am nächsten"
         style="width:100%;border:1px solid var(--rule);border-radius:3px" loading="lazy">
@@ -666,7 +695,8 @@ footer{padding:26px 0 46px;font-family:var(--mono);font-size:10.5px;letter-spaci
     <p style="font-family:var(--ui);font-size:13px;color:var(--ink-3);max-width:60ch">
       Takewrite l&auml;uft vollst&auml;ndig im Browser. Filme, B&uuml;cher und Arbeitsst&auml;nde
       verbleiben auf dem Rechner des Nutzers; diese Seite setzt keine Cookies und
-      bindet keine Drittdienste ein.
+      bindet von sich aus keine Drittdienste ein. Das Video wird erst geladen,
+      wenn Sie es anklicken.
     </p>
   </div>
 </div></div>
@@ -700,6 +730,27 @@ footer{padding:26px 0 46px;font-family:var(--mono);font-size:10.5px;letter-spaci
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
+})();
+</script>
+
+<script>
+/* Der Player kommt erst, wenn jemand ihn will. Vorher steht hier ein eigenes
+   Bild — kein Skript, kein Cookie, keine Anfrage nach Kalifornien. */
+(function(){
+  var box = document.getElementById("video");
+  if(!box) return;
+  var knopf = box.querySelector(".videostart");
+  if(!knopf) return;
+  knopf.addEventListener("click", function(){
+    var f = document.createElement("iframe");
+    f.src = "https://www.youtube-nocookie.com/embed/wIlX2rnvW8M?autoplay=1&rel=0";
+    f.title = "Takewrite — Synchronbuch einfach schreiben";
+    f.allow = "accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture";
+    f.referrerPolicy = "strict-origin-when-cross-origin";
+    f.allowFullscreen = true;
+    box.innerHTML = "";
+    box.appendChild(f);
+  });
 })();
 </script>
 
