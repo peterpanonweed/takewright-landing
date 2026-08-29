@@ -42,7 +42,7 @@
   --ink:#0E1519; --ink-2:#41505A; --ink-3:#78868F;
   --rule:#CFD6DA; --rule-soft:#DFE4E7;
   --accent:#16606E; --accent-soft:#D6E6E9;
-  --warm:#A8481A; --warm-soft:#F2E1D6;
+  --warm:#A8481A; --gut-soft:#DDECE3;
   --gut:#1E6B4E;
   --film:#07090B; --film-ink:#E9EEF2; --film-dim:#6F7B85; --film-accent:#72BBC8;
   --display:"Bahnschrift","DIN Alternate","Franklin Gothic Medium","Helvetica Neue",Arial,sans-serif;
@@ -57,7 +57,7 @@
     --ink:#E4E9ED; --ink-2:#A5B0B9; --ink-3:#74818B;
     --rule:#28323A; --rule-soft:#1E262D;
     --accent:#6FBECD; --accent-soft:#123037;
-    --warm:#DD9159; --warm-soft:#33241A; --gut:#5FC29A; --rf-l:70%;
+    --warm:#DD9159; --gut:#5FC29A; --gut-soft:#16291F; --rf-l:70%;
   }
 }
 :root[data-theme="dark"]{
@@ -65,7 +65,7 @@
   --ink:#E4E9ED; --ink-2:#A5B0B9; --ink-3:#74818B;
   --rule:#28323A; --rule-soft:#1E262D;
   --accent:#6FBECD; --accent-soft:#123037;
-  --warm:#DD9159; --warm-soft:#33241A; --gut:#5FC29A; --rf-l:70%;
+  --warm:#DD9159; --gut:#5FC29A; --gut-soft:#16291F; --rf-l:70%;
 }
 
 *{box-sizing:border-box}
@@ -200,9 +200,6 @@ h1 em{font-style:normal;color:var(--accent)}
 .weg{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:20px 22px}
 .weg h3{font-family:var(--display);font-size:18px;margin:0 0 7px;font-weight:600}
 .weg p{margin:0;font-size:15px;color:var(--ink-2)}
-.rezept{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--surface-2);
-  border-left:3px solid var(--accent);border-radius:0 3px 3px 0;padding:15px 18px;
-  margin:14px 0 0;overflow-x:auto;white-space:pre;color:var(--ink-2)}
 .stat b{display:block;font-size:clamp(32px,4.2vw,48px);line-height:1;color:var(--accent);
   font-variant-numeric:tabular-nums;font-weight:600}
 .stat span{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
@@ -241,7 +238,7 @@ details p{padding:0 0 20px;color:var(--ink-2);font-size:16px}
 .schluss .knopf.leer{background:transparent;color:var(--film-ink);border-color:#2a343c}
 footer{padding:26px 0 46px;font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;
   color:var(--ink-3);display:flex;gap:18px;flex-wrap:wrap;border-top:1px solid var(--rule)}
-.notiz{margin-top:26px;padding:16px 18px;background:var(--warm-soft);border-left:3px solid var(--warm);
+.notiz{margin-top:26px;padding:16px 18px;background:var(--gut-soft);border-left:3px solid var(--gut);
   font-size:15px;color:var(--ink-2);font-family:var(--ui)}
 .notiz b{color:var(--ink)}
 </style>
@@ -338,10 +335,11 @@ footer{padding:26px 0 46px;font-family:var(--mono);font-size:10.5px;letter-spaci
     </div>
 
     <div class="notiz">
-      <b>Am Ende steht kein Rohbuch, sondern das Buch.</b> Export als DOCX und PDF,
-      dazu die Separierung nach Rollen — in einer sauberen Buchvorlage, Titelblatt,
-      Spaltenbreiten und Zeilenhöhen aufs Zeichen genau. Euer Studio hat ein eigenes
-      Format? Schickt uns die Word-Vorlage, wir richten sie ein.
+      <b>Am Ende steht kein Rohbuch, sondern das Buch.</b> Vorher einmal Korrektur
+      lesen — was auffällt, ist mit einem Klick behoben, einzeln oder alles auf
+      einmal. Dann raus damit: als Word in eurer Vorlage, als PDF, und als Separierung
+      nach Rollen, damit jeder Sprecher nur seine eigenen Takes vor sich hat.
+      Kein Nachbauen, kein Nacharbeiten.
     </div>
   </div>
 </div></div>
@@ -377,16 +375,6 @@ footer{padding:26px 0 46px;font-family:var(--mono);font-size:10.5px;letter-spaci
       Reihenfolge. Und wenn dein Rohbuch gar keine Timecodes hat, liegen die Zeilen der
       Reihe nach bereit und warten darauf, dass du sie am Bild ansetzt.
     </div>
-
-    <p><b>Kommt dein Rohbuch aus einer KI?</b> Dann verlang <b>CSV</b> — als einziges der
-      vier Formate kann eine KI es dir direkt ins Chatfenster schreiben. Word und Excel
-      sind gepackte Archive; die müsstest du ohnehin erst durch ein Tabellenprogramm
-      schicken. Diesen Satz kannst du übernehmen:</p>
-
-    <pre class="rezept">Gib mir das Ergebnis als CSV aus, mit Semikolon getrennt, UTF-8.
-Erste Zeile als Überschrift: Timecode;Rolle;Text
-Eine Zeile je Take. Timecode als hh:mm:ss:ff.
-Text mit Semikolon oder Anführungszeichen in " " setzen.</pre>
   </div>
 </div></div>
 </section>
@@ -406,6 +394,7 @@ Text mit Semikolon oder Anführungszeichen in " " setzen.</pre>
           <li>Für jeden Einsatz: anhalten, <b>Zahl ablesen, Zahl abtippen</b>, zurückwechseln.</li>
           <li>Ein Satz fehlt — <b>Zeile einschieben</b>, Reihenfolge von Hand richten.</li>
           <li>Rollennamen <b>tausendmal tippen</b>, mit tausend Gelegenheiten für Tippfehler.</li>
+          <li>Jeder Film ein <b>Ordner voller Fassungen</b> — buch_final_v3_neu.docx.</li>
           <li>Am Schluss <b>Format nachbauen</b>, damit es aussieht wie sonst.</li>
         </ul>
       </div>
@@ -414,8 +403,9 @@ Text mit Semikolon oder Anführungszeichen in " " setzen.</pre>
         <ul>
           <li>Bild und Buch <b>nebeneinander</b>, ein Fenster, ein Arbeitsgang.</li>
           <li><b>Ein Klick</b> — die Zeile hat ihre Stelle, auf das Bild genau.</li>
-          <li>Neue Zeile <b>auf Tastendruck</b>, sie sortiert sich selbst ein.</li>
+          <li>Neuer Take <b>auf Tastendruck</b>, er sortiert sich selbst ein.</li>
           <li>Rollen <b>aus der Liste</b>, Umbenennen gilt sofort überall.</li>
+          <li>Jeder Film ein <b>Projekt</b> — Film, Rollen und Stand liegen beisammen.</li>
           <li>Ausgabe <b>in eurer Vorlage</b>. Keine Nacharbeit.</li>
         </ul>
       </div>
@@ -474,10 +464,11 @@ Text mit Semikolon oder Anführungszeichen in " " setzen.</pre>
           lässt sich wieder einlesen.</p>
       </div>
       <div>
-        <p class="marke2">Suche</p>
-        <h3>Wo war die Stelle?</h3>
-        <p>Ein Feld über dem Buch, es sucht in Rolle und Text zugleich. In der Treffermenge
-          arbeitest du ganz normal weiter — Esc, und alle Zeilen sind wieder da.</p>
+        <p class="marke2">Anmerkungen</p>
+        <h3>Was noch offen ist</h3>
+        <p>Jeder Take lässt sich markieren und mit einer Anmerkung versehen — die unsichere
+          Stelle, die Rückfrage ans Studio, der Platzhalter. Beim nächsten Durchgang steht
+          sie da, wo du sie gelassen hast.</p>
       </div>
       <div>
         <p class="marke2">Bild</p>
