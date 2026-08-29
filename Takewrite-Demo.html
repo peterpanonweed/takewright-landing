@@ -1842,6 +1842,13 @@ function laeufeAusText(html){
 }
 
 var scharf=-1;                                   /* Zeile, die auf das Setzen wartet */
+/* In der Demo steht der grosse Rohbuch-Import immer da. Dort ist
+   Beispielmaterial geladen, und genau deshalb verschwand er dort sofort —
+   ausgerechnet in der Fassung, in der ein Besucher sein eigenes Rohbuch
+   hineinziehen soll. In der Vollfassung bleibt es beim alten Verhalten:
+   Ist ein Buch da, waere der grosse Knopf Ballast. */
+var ROHBUCH_IMMER = true;
+
 var SPEICHER="synchron_buch_"+location.pathname; /* eigener Stand je Projektordner */
 
 function zeitVon(c){ return (c.tcSet!==null && c.tcSet!==undefined) ? c.tcSet : c.a; }
@@ -1927,7 +1934,7 @@ function trRender(){
   /* Der grosse Import steht nur da, solange das Buch leer ist. Danach wäre er
      Ballast — der kleine "Rohbuch…" in der Kopfzeile bleibt ja erreichbar. */
   var rg=document.getElementById("rohbuchGross");
-  if(rg) rg.style.display = cues.length ? "none" : "";
+  if(rg) rg.style.display = (cues.length && !ROHBUCH_IMMER) ? "none" : "";
   /* Der eigene Knopf ist entfallen — "Rohbuch-Import" in der Kopfzeile tut
      dasselbe und ist von ueberall erreichbar, weil die Kopfzeile stehen
      bleibt. Zwei Wege zur selben Handlung waren einer zu viel. */
@@ -6316,7 +6323,7 @@ document.getElementById("rohbuchOben").addEventListener("click", rohbuchWaehlen)
 document.getElementById("rohbuchGross").addEventListener("click", rohbuchWaehlen);
 /* Beim Start einmal richtig stellen — trRender läuft nicht in jedem Fall */
 (function(){ var rg=document.getElementById("rohbuchGross");
-  if(rg) rg.style.display = cues.length ? "none" : ""; })();
+  if(rg) rg.style.display = (cues.length && !ROHBUCH_IMMER) ? "none" : ""; })();
 
 projekteLaden();
 filmeSuchen();
