@@ -75,9 +75,30 @@ header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
    die Kopfzeile gerade ist, sagt --kopf; bei schmalem Fenster bricht sie um
    und wird hoeher, darum wird der Wert gemessen und nicht geraten. */
 .phead.buchkopf{position:sticky;top:var(--kopf,59px);z-index:30;
-  background:var(--surface);flex-wrap:wrap;row-gap:6px}
+  background:var(--surface);flex-wrap:wrap;row-gap:5px;padding:7px 15px 0}
 .phead.buchkopf .fortschritt{flex:0 0 100%;margin:0}
 .phead.buchkopf .schalter{white-space:nowrap}
+/* Die Anmerkungen stehen zugeklappt in derselben Zeile und nehmen erst beim
+   Aufklappen die ganze Breite. */
+.phead.buchkopf .notizen{margin:0;border:0;background:none;flex:0 0 auto;min-width:0}
+.phead.buchkopf .notizen[open]{flex:0 0 100%}
+.phead.buchkopf .notizen>summary{padding:0;white-space:nowrap}
+.phead.buchkopf .notizen textarea{margin-top:6px;width:100%}
+
+/* Die Suche in der Kopfzeile: eigene Zeile ganz unten, rechtsbuendig — sie
+   sitzt damit auf der schwarzen Linie und ist aus jeder Scrollhoehe da. */
+/* Sie teilt sich die Zeile mit den Knoepfen und bricht erst um, wenn es eng
+   wird. Eine eigene Zeile sah zwar grosszuegig aus, machte die Kopfzeile aber
+   von 59 auf 112 Pixel hoch — und genau die wollten wir dem Buch geben. */
+.suchzeile{flex:1 1 240px;display:flex;align-items:center;justify-content:flex-end;
+  gap:10px;min-width:0}
+.suchzeile .suche{flex:1 1 auto;max-width:420px;min-width:0;
+  font-size:13.5px;padding:6px 11px}
+.suchzeile .cnt{font-family:var(--font-mono);font-size:11px;color:var(--ink-3)}
+/* In der App verborgen, in der Demo sichtbar — dort steht jemand zum ersten
+   Mal davor und darf ruhig lesen, worum es geht. demo_bauen.py blendet ihn
+   wieder ein. */
+.demo-nur{display:inline}
 
 /* Die Ausgabemenues: der Knopf traegt die Liste unter sich */
 .ausgabe{position:relative;display:inline-flex}
@@ -783,7 +804,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 <header class="cover">
   <div class="marke">
     <span class="wortmarke" role="img" aria-label="Takewrite"></span>
-    <span class="claim">Synchronbücher am Bild schreiben</span>
+    <!-- Der Claim gehoert auf die Landingpage, nicht ueber den Arbeitsplatz:
+         Wer hier sitzt, ist ueberzeugt. Er kostete die Breite, die Suche und
+         Knoepfe brauchen, um in EINE Zeile zu passen. -->
+    <span class="claim demo-nur">Synchronbücher am Bild schreiben</span>
     <span class="ver" style="color:var(--warm);border-color:var(--warm)" title="Demo-Fassung — auf 40 Takes begrenzt">1.0 · DEMO — 40 Takes</span>
     <span class="projekt" id="projektName" style="display:none"></span>
     <span class="demohinweis">Zum Ausprobieren &mdash; hier sichert nichts von allein. Der gr&uuml;ne Knopf legt deinen Stand als Datei ab, <b>Stand einlesen</b> holt ihn zur&uuml;ck.</span>
@@ -820,6 +844,13 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <b>&#128190;</b> Sichern
     </button>
     <button class="mini" id="punktListe" title="Frühere Sicherungspunkte ansehen und zurückholen">Sicherungen…</button>
+  </div>
+  <!-- Die Suche haengt an der schwarzen Linie und ist damit immer da. Sie
+       gehoert nicht in die Buchspalte: Gesucht wird zwischendurch, aus jeder
+       Scrollhoehe, und in der Spalte kostete sie eine ganze Zeile. -->
+  <div class="suchzeile">
+    <span class="cnt" id="trCnt">—</span>
+    <input type="search" id="trSuche" class="suche" placeholder="Suchen: Rolle oder Text" spellcheck="false" autocomplete="off" title="Zeigt nur Zeilen, in denen Rolle oder Text das Gesuchte enthalten · Esc leert das Feld">
   </div>
 </header>
 
@@ -1104,9 +1135,17 @@ input[type=range]{width:100%;accent-color:var(--accent)}
            Und die Zeile klebt unter der Kopfzeile fest, damit Suche und
            Schriftgroesse aus jeder Scrollhoehe erreichbar bleiben. -->
       <div class="phead buchkopf">
-        <input type="search" id="trSuche" class="suche" placeholder="Suchen: Rolle oder Text" spellcheck="false" autocomplete="off" title="Zeigt nur Zeilen, in denen Rolle oder Text das Gesuchte enthalten · Esc leert das Feld">
-        <span class="cnt" id="trCnt">—</span>
         <label class="schalter mitlauf" title="Während der Film läuft, rollt die Liste zur gerade gesprochenen Zeile mit. Beim Schreiben bleibt sie in jedem Fall stehen."><input type="checkbox" id="trMitlauf"><span>folgt dem Film</span></label>
+        <!-- Die Anmerkungen sitzen in derselben Zeile. Aufgeklappt nehmen sie
+             die ganze Breite — das macht details[open] in der CSS. -->
+        <details class="notizen" id="notizen">
+          <summary>
+            <span class="nzKopf">Anmerkungen</span>
+            <span class="nzVorschau" id="nzVorschau">fürs Titelblatt</span>
+          </summary>
+          <textarea id="kfAnmerkungen" rows="4" spellcheck="false"
+            placeholder="Kommt aufs Titelblatt unter die Synopsis. Zum Beispiel: Der Kommissar wird durchgehend „Chef“ gerufen. Oder Aussprachehinweise, eine Zeile je Anmerkung."></textarea>
+        </details>
         <button class="mini" id="trFragen" style="display:none" title="Nur die markierten Zeilen zeigen — nochmal klicken zeigt wieder alle">&#9873; 0</button>
         <span class="sp" style="flex:1"></span>
         <button class="mini" id="trKleiner" title="Schrift kleiner">A−</button>
@@ -1122,16 +1161,6 @@ input[type=range]{width:100%;accent-color:var(--accent)}
         ROHBUCH IMPORTIEREN
         <small>vorhandene Übersetzung als Gerüst · SRT, CSV, Excel, Word, Textdatei</small>
       </button>
-      <!-- Die Anmerkungen entstehen beim Schreiben und gehoeren aufs
-           Titelblatt. Es ist zugleich das Kopffeld — ein Ort, ein Wert. -->
-      <details class="notizen" id="notizen">
-        <summary>
-          <span class="nzKopf">Anmerkungen</span>
-          <span class="nzVorschau" id="nzVorschau">für das Titelblatt &mdash; anklicken</span>
-        </summary>
-        <textarea id="kfAnmerkungen" rows="4" spellcheck="false"
-          placeholder="Kommt aufs Titelblatt unter die Synopsis. Zum Beispiel: Der Kommissar wird durchgehend „Chef“ gerufen. Oder Aussprachehinweise, eine Zeile je Anmerkung."></textarea>
-      </details>
       <div class="trbar trhinweiszeile leer" id="trHintZeile">
         <span class="trhint" id="trHint"></span>
       </div>
