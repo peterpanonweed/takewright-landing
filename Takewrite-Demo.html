@@ -1180,12 +1180,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           <b>Zeile</b> &nbsp;<b>&#9654;</b> Film springt zur Zeile · <b>Klick auf den Timecode</b> setzt die Filmzeit · <b>Rechtsklick</b> Zeit eintippen oder leeren<br>
           <b>Buch</b> &nbsp;<kbd>W</kbd><kbd>S</kbd> Zeile hoch und runter · <kbd>Enter</kbd> Zeit setzen<br>
           <kbd>E</kbd> oder <kbd>N</kbd> Neuer Take · <kbd>Esc</kbd> Auswahl lösen<br>
-          <kbd>Strg</kbd>+<kbd>Z</kbd> Rückgängig · <kbd>Strg</kbd>+<kbd>Y</kbd> Wiederholen<br>
+          <kbd>Strg</kbd>+<kbd>Z</kbd> Rückgängig · <kbd>Strg</kbd>+<kbd>Y</kbd> Wiederholen · <kbd>Strg</kbd>+<kbd>I</kbd> Markiertes kursiv<br>
           <b>Regie</b> &nbsp;beim Schreiben, mit <kbd>Alt</kbd>:<br>
           <span style="margin-left:52px">Die Tasten liegen wie die Knöpfe — ab Werk:</span><br>
           <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>E</kbd><kbd>R</kbd><kbd>T</kbd> &nbsp;(.) (..) (…)</span><br>
           <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>D</kbd><kbd>F</kbd><kbd>G</kbd> &nbsp;(ON) (OFF) (CONT)</span><br>
           <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>C</kbd><kbd>V</kbd><kbd>B</kbd> &nbsp;(LACHT) (ATMER) (LAUTE)</span><br>
+          <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>X</kbd> &nbsp;(REAKTION)</span><br>
+          <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>W</kbd><kbd>S</kbd><kbd>H</kbd><kbd>K</kbd> &nbsp;(WEINT) (SCHREIT) (HUSTET) (KUSSGERÄUSCH)</span><br>
           <span style="margin-left:52px">änderbar unter <b>Tastenbelegung</b> oder per Rechtsklick auf die Schaltfläche</span><br>
           <span style="margin-left:52px"><kbd>Alt</kbd>+<kbd>A</kbd> Anmerkung des Autors <b>[</b><i>kursiv</i><b>]</b> · <kbd>Alt</kbd>+<kbd>M</kbd> <b>[</b><i>auf stumm</i><b>]</b></span><br>
           <span style="margin-left:52px">dieselben auch auf <kbd>F2</kbd> <kbd>F4</kbd> <kbd>F7</kbd> <kbd>F8</kbd> <kbd>F9</kbd></span><br>
@@ -2409,7 +2411,14 @@ var MARKEN=[
   /* X ist doppelt frei: weder als Regieangabe vergeben noch unter den
      Transporttasten. Und sie liegt direkt links von C — im selben Tastenblock
      unter der linken Hand wie E R T, D F G und C V B. */
-  {kennung:"reaktion", zeigt:"(REAKTION)", ein:"(REAKTION) ", titel:"Figur reagiert ohne zu sprechen", standard:"X"}
+  {kennung:"reaktion", zeigt:"(REAKTION)", ein:"(REAKTION) ", titel:"Figur reagiert ohne zu sprechen", standard:"X"},
+  /* Die Tasten sind hier Merkhilfen statt Nachbarn im Tastenblock: W wie
+     weint, S wie schreit, H wie hustet, K wie Kuss. Ohne Alt bedeuten W und S
+     etwas anderes — Zeile hoch und runter —, mit Alt waren sie frei. */
+  {kennung:"weint",  zeigt:"(WEINT)",   ein:"(WEINT) ",   titel:"weint",         standard:"W"},
+  {kennung:"schreit",zeigt:"(SCHREIT)", ein:"(SCHREIT) ", titel:"schreit",       standard:"S"},
+  {kennung:"hustet", zeigt:"(HUSTET)",  ein:"(HUSTET) ",  titel:"hustet",        standard:"H"},
+  {kennung:"kuss",   zeigt:"(KUSSGERÄUSCH)", ein:"(KUSSGERÄUSCH) ", titel:"Kussgeräusch", standard:"K"}
 ];
 
 /* Die gewaehlten Tasten. Was hier nicht steht, behaelt seinen Standard. */
@@ -2445,9 +2454,7 @@ function leisteAufbauen(){
          + esc(m.zeigt) + (k ? '<i>'+esc(k)+'</i>' : '') + '</button>';
   }).join("")
  + '<div class="wzhinweis">'
- +   '<button type="button" class="kursivknopf" data-kursiv title="Markiertes kursiv setzen — Strg+I">'
- +     '<em>K</em> kursiv</button>'
- +   '<span>markieren, dann <b>Strg+I</b> · <b>Alt</b> und der Buchstabe setzt direkt, '
+ +   '<span>kursiv: markieren, dann <b>Strg+I</b> · <b>Alt</b> und der Buchstabe setzt direkt, '
  +     '<b>Enter</b> setzt · <b>Rechtsklick</b> ändert die Taste</span>'
  + '</div>';
 }
