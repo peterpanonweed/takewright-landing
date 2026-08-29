@@ -783,6 +783,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .keys b{display:inline-block;min-width:44px;color:var(--accent);font-weight:400;letter-spacing:.1em;text-transform:uppercase;font-size:9.5px}
 .keys kbd{background:var(--surface-2);border:1px solid var(--rule);border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:var(--ink-2);font-size:10px}
 .colophon{margin-top:30px;padding-top:16px;border-top:1px solid var(--rule);font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink-3)}
+.colophon a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--rule)}
+.colophon a:hover{color:var(--accent);border-bottom-color:var(--accent)}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);background:var(--ink);color:var(--ground);font-family:var(--font-mono);font-size:12px;letter-spacing:.05em;padding:11px 20px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
 /* Platz fuer das Kreuz, das die Meldung schliesst */
@@ -1189,7 +1191,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   </aside>
 </div>
 
-<p class="colophon">Takewrite · takewrite.de · Fassung 1 · Der Film bleibt auf diesem Rechner</p>
+<p class="colophon">Takewrite · <a href="https://takewrite.de" target="_blank" rel="noopener">takewrite.de</a> · Fassung 1 · von <a href="https://peterpanonweed.github.io/adamdev/" target="_blank" rel="noopener">adamdev</a> · Der Film bleibt auf diesem Rechner</p>
 </div>
 
 <input type="file" id="file" accept="video/*,.mkv,.mov,.mxf" style="display:none">
