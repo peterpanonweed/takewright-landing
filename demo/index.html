@@ -46,7 +46,18 @@ body{background:var(--ground);color:var(--ink);font-family:var(--font-ui);font-s
 .wrap{max-width:none;margin:0 auto}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-header.cover{padding:20px 0 12px;border-bottom:2px solid var(--ink);display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+/* Die Kopfzeile bleibt oben stehen — bis zur schwarzen Linie. Sichern,
+   Sicherungen, Rohbuch und die beiden Ausgabemenues sind damit aus jeder
+   Scrollhoehe erreichbar, statt nur ganz oben.
+
+   Die negativen Seitenraender heben das Innenmass des body auf: Ohne sie
+   endete der Hintergrund 18 Pixel vor dem Rand, und der Inhalt schoebe sich
+   links und rechts sichtbar daran vorbei. Etwas flacher als vorher, weil sie
+   jetzt dauerhaft Platz kostet. */
+header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
+  margin:0 -18px;padding:13px 18px 10px;
+  border-bottom:2px solid var(--ink);display:flex;align-items:center;
+  gap:20px;flex-wrap:wrap}
 
 /* Wortmarke: technische Schrift wie auf der Produktseite, damit App und
    Aussenauftritt dieselbe Sprache sprechen. */
