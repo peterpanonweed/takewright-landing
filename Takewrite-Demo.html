@@ -122,6 +122,27 @@ header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
 .suchbox .nurrollen:hover{border-color:var(--accent);color:var(--accent)}
 .suchbox .nurrollen.an{background:var(--accent);border-color:var(--accent);color:#fff}
 
+/* ---------- Die Kachelreihe in der linken Spalte ----------
+   Drei Felder, die man selten und nie gleichzeitig braucht, stehen als Karten
+   nebeneinander statt als Bloecke untereinander. Aufgeklappt nimmt eine die
+   volle Breite — zwei offene Formulare nebeneinander liest niemand. */
+.kachelreihe{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  gap:10px;margin-bottom:14px;align-items:start}
+.kachelreihe .kachelfeld{margin:0;min-width:0;border:1px solid var(--rule);
+  border-radius:6px;background:var(--surface);overflow:hidden}
+.kachelreihe .kachelfeld:hover{border-color:var(--warm)}
+.kachelreihe .kachelfeld[open]{grid-column:1/-1;border-color:var(--rule)}
+.kachelfeld>summary{cursor:pointer;padding:11px 13px;gap:5px;background:none;
+  border:0;display:flex;flex-direction:column;align-items:flex-start}
+.kachelfeld[open]>summary{flex-direction:row;align-items:center;gap:10px;
+  border-bottom:1px solid var(--rule);background:var(--surface-2)}
+.kachelfeld>summary::-webkit-details-marker{display:none}
+.kachelfeld>summary::marker{content:""}
+.kachelfeld>summary h3{flex:0 0 auto}
+.kachelfeld>summary .cnt{font-size:10px;color:var(--ink-3);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.kachelfeld:hover>summary h3{color:var(--ink)}
+
 /* Die Ausgabemenues: der Knopf traegt die Liste unter sich */
 .ausgabe{position:relative;display:inline-flex}
 .expliste{position:absolute;top:calc(100% + 4px);right:0;z-index:40;min-width:150px;
@@ -1064,78 +1085,68 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       </div>
     </div>
 
-    <div class="panel">
-      <div class="phead"><h3>Ausgabe</h3></div>
-      <div class="pbody">
-        <!-- Export und Separierung sind in die Kopfzeile gezogen. Hier bleibt
-             nur, was dorthin nicht passt: der Rueckweg aus einer DOCX und die
-             Auskunft, wohin der Arbeitsstand geht. Die Zwischenablage, "Stand
-             als Datei" und "Stand einlesen" sind entfallen — der Server legt
-             den Stand ohnehin als Datei ab und haelt Tageskopien, und
-             zurueckholen kann man ihn ueber Sicherungen. -->
-        <div class="btnrow">
-          <span class="standlampe" id="standLampe" title="Wohin der Arbeitsstand gesichert wird">
+    <!-- Drei Kacheln nebeneinander statt drei Felder untereinander. Zugeklappt
+         zeigt jede nur ihren Namen und eine Zeile Auskunft; aufgeklappt nimmt
+         sie die volle Breite. Die Ausgabe war ohnehin fast leer, seit Export
+         und Separierung in der Kopfzeile sitzen, und das Titelblatt fuellt man
+         einmal aus — beide brauchen keinen Dauerplatz. -->
+    <div class="kachelreihe">
+
+      <details class="panel klapp kachelfeld" id="feldKorrektur">
+        <summary class="phead">
+          <h3>Korrektur lesen</h3>
+          <span class="cnt" id="prCnt"></span>
+        </summary>
+        <div class="pbody">
+          <p class="hint">Sucht Schreibfehler, die beim Tippen entstehen — fehlende
+            Leerzeichen, doppelte Leerzeichen, Leerzeichen vor Satzzeichen.
+            <b>Es wird nichts von allein geändert:</b> Jeder Fund zeigt vorher und
+            nachher, und du entscheidest einzeln.</p>
+          <div class="btnrow">
+            <span class="sp" style="flex:1"></span>
+            <button class="mini" id="prStart">Durchsuchen</button>
+            <button class="mini" id="prAlle" style="display:none">Alle übernehmen</button>
+          </div>
+          <div class="rows" id="prRows"><div class="empty-note">— noch nicht durchsucht —</div></div>
+        </div>
+      </details>
+
+      <details class="panel klapp kachelfeld" id="feldTitelblatt">
+        <summary class="phead">
+          <h3>Titelblatt</h3>
+          <span class="cnt" id="kfCnt"></span>
+        </summary>
+        <div class="pbody kopffelder">
+          <label>Titel<input type="text" id="kfTitel" spellcheck="false" placeholder="wird aus der Filmdatei übernommen"></label>
+          <label>Buch von<input type="text" id="kfAutor" spellcheck="false" placeholder="Name"></label>
+          <label>Genre<input type="text" id="kfGenre" spellcheck="false" placeholder="z. B. Jugendkomödie"></label>
+          <label>Synopsis<textarea id="kfSynopsis" rows="4" spellcheck="false" placeholder="Kurze Zusammenfassung, worum es geht"></textarea></label>
+          <div class="kfpaar">
+            <label>Mail<input type="text" id="kfMail" spellcheck="false" autocomplete="off"></label>
+            <label>Telefon<input type="text" id="kfTel" spellcheck="false" autocomplete="off"></label>
+          </div>
+        </div>
+      </details>
+
+      <details class="panel klapp kachelfeld" id="feldAusgabe">
+        <summary class="phead">
+          <h3>Ablage</h3>
+          <span class="cnt standlampe" id="standLampe" title="Wohin der Arbeitsstand gesichert wird">
             <i></i><span id="ablageStand">wird geprüft …</span>
           </span>
-          <span class="sp" style="flex:1"></span>
-          <button class="t" id="impdocx" title="Ein früher exportiertes Buch wieder in die App holen — die DOCX ist damit eine vollwertige Sicherung">Aus DOCX zurückholen</button>
+        </summary>
+        <div class="pbody">
+          <p class="hint">Export und Separierung stehen oben in der Kopfzeile. Hier
+            steht nur der Rückweg: Eine früher exportierte DOCX lässt sich wieder
+            einlesen — damit ist jeder Export zugleich eine Sicherung.</p>
+          <div class="btnrow">
+            <span class="sp" style="flex:1"></span>
+            <button class="t" id="impdocx" title="Ein früher exportiertes Buch wieder in die App holen — die DOCX ist damit eine vollwertige Sicherung">Aus DOCX zurückholen</button>
+          </div>
+          <input type="checkbox" id="expAlles" style="display:none">
         </div>
-        <input type="checkbox" id="expAlles" style="display:none">
-        <!-- Achtzehn Zeilen Tastenkunde standen hier dauerhaft offen. Wer sie
-             einmal gelesen hat, liest sie nie wieder — sie hielt nur Platz
-             besetzt, den die Arbeit braucht. Zugeklappt bleibt sie da. -->
-        <details class="klapp tastenspick">
-          <summary>Alle Tasten auf einen Blick</summary>
-        <div class="keys">
-          <b>Film</b> &nbsp;<kbd>A</kbd><kbd>D</kbd> 1 Sekunde · mit <kbd>Shift</kbd> 10 Sekunden<br>
-          <kbd>←</kbd><kbd>→</kbd> 1 Bild · mit <kbd>Shift</kbd> 5 Bilder · <kbd>Leer</kbd> oder Klick aufs Bild — Abspielen/Anhalten · Vollbild: Schaltfläche oben rechts im Bild<br>
-          <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd> Shuttle zurück / Stopp / vor — mehrfach drücken beschleunigt<br>
-          <kbd>Pos1</kbd><kbd>Ende</kbd> Anfang und Schluss<br>
-          <b>Zeile</b> &nbsp;<b>&#9654;</b> Film springt zur Zeile · <b>Klick auf den Timecode</b> setzt die Filmzeit · <b>Rechtsklick</b> Zeit eintippen oder leeren<br>
-          <b>Buch</b> &nbsp;<kbd>W</kbd><kbd>S</kbd> Zeile hoch und runter · <kbd>Enter</kbd> Zeit setzen<br>
-          <kbd>E</kbd> oder <kbd>N</kbd> Neuer Take · <kbd>Esc</kbd> Auswahl lösen<br>
-          <kbd>Strg</kbd>+<kbd>Z</kbd> Rückgängig · <kbd>Strg</kbd>+<kbd>Y</kbd> Wiederholen<br>
-          <b>Regie</b> &nbsp;beim Schreiben, mit <kbd>Alt</kbd>:<br>
-          <span style="margin-left:52px">Die Tasten liegen wie die Knöpfe — ab Werk:</span><br>
-          <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>E</kbd><kbd>R</kbd><kbd>T</kbd> &nbsp;(.) (..) (…)</span><br>
-          <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>D</kbd><kbd>F</kbd><kbd>G</kbd> &nbsp;(ON) (OFF) (CONT)</span><br>
-          <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>C</kbd><kbd>V</kbd><kbd>B</kbd> &nbsp;(LACHT) (ATMER) (LAUTE)</span><br>
-          <span style="margin-left:52px">änderbar unter <b>Tastenbelegung</b> oder per Rechtsklick auf die Schaltfläche</span><br>
-          <span style="margin-left:52px"><kbd>Alt</kbd>+<kbd>A</kbd> Anmerkung des Autors <b>[</b><i>kursiv</i><b>]</b> · <kbd>Alt</kbd>+<kbd>M</kbd> <b>[</b><i>auf stumm</i><b>]</b></span><br>
-          <span style="margin-left:52px">dieselben auch auf <kbd>F2</kbd> <kbd>F4</kbd> <kbd>F7</kbd> <kbd>F8</kbd> <kbd>F9</kbd></span><br>
-          <span style="margin-left:52px"><kbd>Tab</kbd> in die Regie-Leiste · <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> wählen · <kbd>Enter</kbd> einsetzen · <kbd>Esc</kbd> zurück</span><br>
-          <span style="margin-left:52px">Rechtsklick auf die Rolle: Farbe und Umbenennen</span>
-        </div>
-        </details>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="phead">
-        <h3>Prüfen</h3>
-        <span class="cnt" id="prCnt"></span>
-        <button class="mini" id="prStart">Durchsuchen</button>
-        <button class="mini" id="prAlle" style="display:none">Alle übernehmen</button>
-      </div>
-      <div class="pbody">
-        <p class="hint">Sucht Schreibfehler, die beim Tippen entstehen — fehlende Leerzeichen,
-          doppelte Leerzeichen, zusammengerutschte Wörter. <b>Es wird nichts von allein geändert:</b>
-          Jeder Fund zeigt vorher und nachher, und du entscheidest einzeln.</p>
-        <div class="rows" id="prRows"><div class="empty-note">— noch nicht durchsucht —</div></div>
-      </div>
-    </div>
+      </details>
 
-    <div class="panel">
-      <div class="phead"><h3>Titelblatt</h3></div>
-      <div class="pbody kopffelder">
-        <label>Titel<input type="text" id="kfTitel" spellcheck="false" placeholder="wird aus der Filmdatei übernommen"></label>
-        <label>Buch von<input type="text" id="kfAutor" spellcheck="false" placeholder="Name"></label>
-        <label>Genre<input type="text" id="kfGenre" spellcheck="false" placeholder="z. B. Jugendkomödie"></label>
-        <label>Synopsis<textarea id="kfSynopsis" rows="4" spellcheck="false" placeholder="Kurze Zusammenfassung, worum es geht"></textarea></label>
-        <div class="kfpaar">
-          <label>Mail<input type="text" id="kfMail" spellcheck="false" autocomplete="off"></label>
-          <label>Telefon<input type="text" id="kfTel" spellcheck="false" autocomplete="off"></label>
-        </div>
-      </div>
     </div>
 
 
@@ -1159,6 +1170,29 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           jede Taste ändern: hier auf <b>Ändern</b> klicken oder in der Leiste über
           dem Textfeld rechts auf die Schaltfläche.</p>
         <div class="rows" id="belegungRows"></div>
+        <details class="klapp tastenspick">
+          <summary>Alle Tasten auf einen Blick</summary>
+        <div class="keys">
+          <b>Film</b> &nbsp;<kbd>A</kbd><kbd>D</kbd> 1 Sekunde · mit <kbd>Shift</kbd> 10 Sekunden<br>
+          <kbd>←</kbd><kbd>→</kbd> 1 Bild · mit <kbd>Shift</kbd> 5 Bilder · <kbd>Leer</kbd> oder Klick aufs Bild — Abspielen/Anhalten · Vollbild: Schaltfläche oben rechts im Bild<br>
+          <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd> Shuttle zurück / Stopp / vor — mehrfach drücken beschleunigt<br>
+          <kbd>Pos1</kbd><kbd>Ende</kbd> Anfang und Schluss<br>
+          <b>Zeile</b> &nbsp;<b>&#9654;</b> Film springt zur Zeile · <b>Klick auf den Timecode</b> setzt die Filmzeit · <b>Rechtsklick</b> Zeit eintippen oder leeren<br>
+          <b>Buch</b> &nbsp;<kbd>W</kbd><kbd>S</kbd> Zeile hoch und runter · <kbd>Enter</kbd> Zeit setzen<br>
+          <kbd>E</kbd> oder <kbd>N</kbd> Neuer Take · <kbd>Esc</kbd> Auswahl lösen<br>
+          <kbd>Strg</kbd>+<kbd>Z</kbd> Rückgängig · <kbd>Strg</kbd>+<kbd>Y</kbd> Wiederholen<br>
+          <b>Regie</b> &nbsp;beim Schreiben, mit <kbd>Alt</kbd>:<br>
+          <span style="margin-left:52px">Die Tasten liegen wie die Knöpfe — ab Werk:</span><br>
+          <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>E</kbd><kbd>R</kbd><kbd>T</kbd> &nbsp;(.) (..) (…)</span><br>
+          <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>D</kbd><kbd>F</kbd><kbd>G</kbd> &nbsp;(ON) (OFF) (CONT)</span><br>
+          <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>C</kbd><kbd>V</kbd><kbd>B</kbd> &nbsp;(LACHT) (ATMER) (LAUTE)</span><br>
+          <span style="margin-left:52px">änderbar unter <b>Tastenbelegung</b> oder per Rechtsklick auf die Schaltfläche</span><br>
+          <span style="margin-left:52px"><kbd>Alt</kbd>+<kbd>A</kbd> Anmerkung des Autors <b>[</b><i>kursiv</i><b>]</b> · <kbd>Alt</kbd>+<kbd>M</kbd> <b>[</b><i>auf stumm</i><b>]</b></span><br>
+          <span style="margin-left:52px">dieselben auch auf <kbd>F2</kbd> <kbd>F4</kbd> <kbd>F7</kbd> <kbd>F8</kbd> <kbd>F9</kbd></span><br>
+          <span style="margin-left:52px"><kbd>Tab</kbd> in die Regie-Leiste · <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> wählen · <kbd>Enter</kbd> einsetzen · <kbd>Esc</kbd> zurück</span><br>
+          <span style="margin-left:52px">Rechtsklick auf die Rolle: Farbe und Umbenennen</span>
+        </div>
+        </details>
         <div class="btnrow">
           <button class="mini del" id="belegungZurueck">Alle auf Standard zurück</button>
         </div>
@@ -4712,7 +4746,8 @@ function pruefMarkiert(eigen, andere){
 
 function pruefZeigen(){
   var box=document.getElementById("prRows"), p=prof();
-  document.getElementById("prCnt").textContent = pruefFunde.length ? pruefFunde.length+" Funde" : "";
+  document.getElementById("prCnt").textContent = pruefFunde.length
+    ? pruefFunde.length+(pruefFunde.length===1?" Fund":" Funde") : "noch nicht durchsucht";
   document.getElementById("prAlle").style.display = pruefFunde.length ? "" : "none";
   if(!pruefFunde.length){
     box.innerHTML='<div class="empty-note">— nichts gefunden —</div>'; return;
@@ -4799,12 +4834,24 @@ function kopfLesen(){
 }
 function kopfSchreiben(o){
   if(!o) return;
+  setTimeout(function(){ try{ titelblattKachel(); }catch(e){} }, 0);
   KOPFFELDER.forEach(function(n){ var e=kopfEl(n); if(e && typeof o[n]==="string") e.value=o[n]; });
+}
+/* Die Kachel sagt zugeklappt, was drinsteht — sonst muesste man sie
+   aufklappen, nur um zu sehen, ob der Titel schon gefuellt ist. */
+function titelblattKachel(){
+  var e=document.getElementById("kfCnt"); if(!e) return;
+  var o=kopfLesen();
+  var gefuellt=KOPFFELDER.filter(function(k){ return (o[k]||"").trim(); }).length;
+  e.textContent = o.Titel ? o.Titel
+                : gefuellt ? gefuellt+" von "+KOPFFELDER.length+" Feldern"
+                : "noch leer";
 }
 KOPFFELDER.forEach(function(n){
   var e=kopfEl(n);
-  if(e) e.addEventListener("input", sichernGebremst);
+  if(e) e.addEventListener("input", function(){ sichernGebremst(); titelblattKachel(); });
 });
+titelblattKachel();
 /* Ist kein Titel eingetragen, gilt der Name der Filmdatei. */
 function buchTitel(){
   var t=kopfLesen().Titel;
