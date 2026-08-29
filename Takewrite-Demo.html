@@ -6378,7 +6378,8 @@ function lizenzKarte(){
   t.push("<p class=\"kleiner\">Rechnercode: " + fluchten(LIZ.code || "—") + "</p>");
   if(LIZ.anforderung){
     t.push("<p>Zum Freischalten oder Verlängern diese Zeile an "
-         + "<b>mail@adamnuemm.de</b> schicken:</p>");
+         + "<b>" + fluchten(LIZ.kontakt || "support@takewrite.de")
+         + "</b> schicken:</p>");
     t.push("<code id=\"lizAnf\">" + fluchten(LIZ.anforderung) + "</code>");
     t.push("<p class=\"kleiner\">Die Antwort ist eine Datei <b>lizenz.dat</b>. "
          + "Die gehört in denselben Ordner wie „Takewrite starten.bat“. "
