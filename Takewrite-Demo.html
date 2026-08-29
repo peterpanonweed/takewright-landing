@@ -885,7 +885,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <div class="marke">
     <span class="wortmarke" role="img" aria-label="Takewrite"></span>
     <span class="claim">Synchronbuch · einfach · schreiben</span>
-    <span class="ver" style="color:var(--warm);border-color:var(--warm)" title="Demo-Fassung — auf 40 Takes begrenzt">1.1 · DEMO — 40 Takes</span>
+    <span class="ver" style="color:var(--warm);border-color:var(--warm)" title="Demo-Fassung — auf 75 Takes begrenzt">1.1 · DEMO — 75 Takes</span>
     <span class="projekt" id="projektName" style="display:none"></span>
     <span class="demohinweis">Zum Ausprobieren &mdash; hier sichert nichts von allein. Der gr&uuml;ne Knopf legt deinen Stand als Datei ab, <b>Stand einlesen</b> holt ihn zur&uuml;ck.</span>
     <button class="lizchip" id="lizChip" style="display:none" type="button"></button>
@@ -1268,7 +1268,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
            Knopf nur noch im Weg. Der kleine "Rohbuch…" in der Kopfzeile
            bleibt fuer alle spaeteren Faelle. -->
       <button type="button" class="rohbuchgross" id="rohbuchGross" style="display:none">
-        ROHBUCH IMPORTIEREN
+        ROHBUCH IMPORTIEREN (OPTIONAL)
         <small>vorhandene Übersetzung als Gerüst · SRT, CSV, Excel, Word, Textdatei</small>
       </button>
       <div class="trbar trhinweiszeile leer" id="trHintZeile">
@@ -3742,10 +3742,10 @@ function inhaltAus(text){
 var undoStapel=[], redoStapel=[], letzterInhalt=null;
 
 /* ---------- Demo-Grenze ----------
-   Die Demo fuehrt 40 Takes. Bearbeitet heisst: Zeit gesetzt, selbst
+   Die Demo fuehrt 75 Takes. Bearbeitet heisst: Zeit gesetzt, selbst
    eingefuegt, Rolle vergeben oder Text geaendert — dieselbe Regel, nach der
    auch der Export seinen Arbeitsstand bestimmt. */
-var DEMO_TAKES=40;
+var DEMO_TAKES=75;
 function demoBearbeitet(){
   var n=0;
   for(var i=0;i<cues.length;i++){
@@ -3759,7 +3759,7 @@ function demoVoll(c){
   /* Eine schon bearbeitete Zeile darf weiter bearbeitet werden */
   if(c && ((c.rolle||"").trim()!=="" || c.gesetzt || c.neu || c.textGeaendert)) return false;
   if(demoBearbeitet() < DEMO_TAKES) return false;
-  toast("Demo-Grenze erreicht: 40 Takes. Die Vollversion kennt keine Grenze.");
+  toast("Demo-Grenze erreicht: 75 Takes. Die Vollversion kennt keine Grenze.");
   return true;
 }
 
@@ -4976,7 +4976,7 @@ function wordExport(nachRollen){
     bisTC=(bitcAt(tz) || framesToTC(Math.round(tz*p.rate), p)).slice(0,8);
   }
 
-  if(zeilen.length>DEMO_TAKES){ zeilen=zeilen.slice(0,DEMO_TAKES); toast("Demo: Ausgabe auf 40 Takes begrenzt"); }
+  if(zeilen.length>DEMO_TAKES){ zeilen=zeilen.slice(0,DEMO_TAKES); toast("Demo: Ausgabe auf 75 Takes begrenzt"); }
   bisTC=bisTC||"";
   var doc=VORLAGE["word/document.xml"];
 
