@@ -59,6 +59,14 @@ header.cover{padding:20px 0 12px;border-bottom:2px solid var(--ink);display:flex
 /* Der Sicherungsknopf steht oben und faellt auf — er ist die Handlung,
    die man nach jeder Arbeitsstrecke tun soll. */
 .sicherbox{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+/* Die Ausgabemenues: der Knopf traegt die Liste unter sich */
+.ausgabe{position:relative;display:inline-flex}
+.expliste{position:absolute;top:calc(100% + 4px);right:0;z-index:40;min-width:150px;
+  background:var(--surface);border:1px solid var(--rule);border-radius:5px;
+  box-shadow:0 6px 20px rgba(0,0,0,.16);padding:4px;display:flex;flex-direction:column}
+.expliste button{text-align:left;font:inherit;font-size:12.5px;color:var(--ink);
+  background:none;border:0;border-radius:4px;padding:7px 10px;cursor:pointer;white-space:nowrap}
+.expliste button:hover{background:var(--surface-2)}
 #punktKnopf{display:inline-flex;align-items:center;gap:8px;background:var(--good);
   color:var(--ground);border:0;border-radius:3px;cursor:pointer;font-family:var(--font-mono);
   font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:10px 18px}
@@ -771,6 +779,23 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <div class="sicherbox">
     <span id="punktStand"></span>
     <button class="mini" id="rohbuchOben" title="Rohbuch laden — SRT-Untertitel, Textdatei, Excel oder Word">Rohbuch…</button>
+    <!-- Die Ausgabe gehoert hierher: Sie ist das Ergebnis, nicht eine
+         Einstellung in einer Spalte. Zwei Knoepfe, die sich in Formate
+         auffaechern — das spart die halbe Werkzeugleiste von vorher. -->
+    <span class="ausgabe">
+      <button class="mini" id="expMenu" title="Das ganze Buch als durchgehende Tabelle">Export ▾</button>
+      <div class="expliste" id="expListe" style="display:none">
+        <button type="button" data-exp="docx">Word · docx</button>
+        <button type="button" data-exp="pdf">PDF</button>
+        <button type="button" data-exp="xlsx">Excel</button>
+      </div>
+    </span>
+    <span class="ausgabe">
+      <button class="mini" id="sepMenu" title="Je Rolle ein eigener Abschnitt auf eigener Seite">Separierung ▾</button>
+      <div class="expliste" id="sepListe" style="display:none">
+        <button type="button" data-sep="docx">Word · docx</button>
+      </div>
+    </span>
     <button id="punktKnopf" title="Den jetzigen Stand als Sicherungspunkt festhalten — er wird nie überschrieben">
       <b>&#128190;</b> Sichern
     </button>
@@ -957,24 +982,20 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <div class="panel">
       <div class="phead"><h3>Ausgabe</h3></div>
       <div class="pbody">
-        <p class="hint">Die beiden DOCX sind das Ergebnis. <b>Aus DOCX zurückholen</b> liest ein früher exportiertes Buch wieder ein — damit ist jeder Export zugleich eine Sicherung des Arbeitsstands.</p>
-        <div class="btnrow">
-          <label class="schalter" title="Ohne Haken endet die Ausgabe bei der letzten bearbeiteten Zeile"><input type="checkbox" id="expAlles"><span>Ganzes Buch, auch Unbearbeitetes</span></label>
-          <button class="t prim" id="expword" title="Das ganze Buch als durchgehende Tabelle">Export als DOCX</button>
-          <button class="t prim" id="expwordrollen" title="Separierung: je Rolle ein eigener Abschnitt auf eigener Seite, Rollen alphabetisch">Separierung</button>
-          <button class="t" id="exppdf" title="Öffnet die Druckansicht — im Druckdialog „Als PDF speichern“ wählen">PDF…</button>
-          <button class="t" id="expxlsx" title="Echtes Excel-Format, drei Spalten — lässt sich auch direkt in Google Sheets ziehen">Excel</button>
-          <button class="t" id="expclip">In die Zwischenablage</button>
-          <button class="t" id="impdocx" title="Ein früher exportiertes Buch wieder in die App holen — die DOCX ist damit eine vollwertige Sicherung">Aus DOCX zurückholen</button>
-        </div>
+        <!-- Export und Separierung sind in die Kopfzeile gezogen. Hier bleibt
+             nur, was dorthin nicht passt: der Rueckweg aus einer DOCX und die
+             Auskunft, wohin der Arbeitsstand geht. Die Zwischenablage, "Stand
+             als Datei" und "Stand einlesen" sind entfallen — der Server legt
+             den Stand ohnehin als Datei ab und haelt Tageskopien, und
+             zurueckholen kann man ihn ueber Sicherungen. -->
         <div class="btnrow">
           <span class="standlampe" id="standLampe" title="Wohin der Arbeitsstand gesichert wird">
             <i></i><span id="ablageStand">wird geprüft …</span>
           </span>
           <span class="sp" style="flex:1"></span>
-          <button class="mini" id="standSichernJetzt" title="Den Arbeitsstand jetzt als Datei herunterladen — für ein zweites Gerät oder ein eigenes Archiv">Stand als Datei</button>
-          <button class="mini" id="ablageLesen" title="Einen gesicherten Arbeitsstand (JSON-Datei) wieder einlesen">Stand einlesen…</button>
+          <button class="t" id="impdocx" title="Ein früher exportiertes Buch wieder in die App holen — die DOCX ist damit eine vollwertige Sicherung">Aus DOCX zurückholen</button>
         </div>
+        <input type="checkbox" id="expAlles" style="display:none">
         <!-- Achtzehn Zeilen Tastenkunde standen hier dauerhaft offen. Wer sie
              einmal gelesen hat, liest sie nie wieder — sie hielt nur Platz
              besetzt, den die Arbeit braucht. Zugeklappt bleibt sie da. -->
@@ -1082,7 +1103,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           placeholder="Kommt aufs Titelblatt unter die Synopsis. Zum Beispiel: Der Kommissar wird durchgehend „Chef“ gerufen. Oder Aussprachehinweise, eine Zeile je Anmerkung."></textarea>
       </details>
       <div class="trbar">
-        <label class="schalter mitlauf" title="Während der Film läuft, rollt die Liste zur gerade gesprochenen Zeile mit. Beim Schreiben bleibt sie in jedem Fall stehen."><input type="checkbox" id="trMitlauf" checked><span>Liste folgt dem Film</span></label>
+        <label class="schalter mitlauf" title="Während der Film läuft, rollt die Liste zur gerade gesprochenen Zeile mit. Beim Schreiben bleibt sie in jedem Fall stehen."><input type="checkbox" id="trMitlauf"><span>Liste folgt dem Film</span></label>
         <button class="mini" id="trLoesen" title="Nimmt der ausgewählten Zeile die gesetzte Zeit wieder weg und zählt sie erneut als unerledigt">Zeit lösen</button>
         <button class="mini" id="trFragen" style="display:none" title="Nur die markierten Zeilen zeigen — nochmal klicken zeigt wieder alle">&#9873; 0</button>
         <span class="sp"></span>
@@ -1858,8 +1879,12 @@ document.addEventListener("click", function(e){
 var nurFragen=false;
 
 /* Der Schalter merkt sich seinen Zustand — je Rechner, nicht je Projekt. */
-var mitlaufAn=true;
-try{ mitlaufAn = localStorage.getItem("takewright_mitlauf")!=="0"; }catch(e){}
+/* Ab Werk AUS. Solange die Liste dem Film folgt, zieht sie gegen die Hand:
+   Wer waehrenddessen von Hand scrollt, wird zurueckgerissen und haelt es fuer
+   ein hakendes Fenster. Wer das Mitlaufen will, schaltet es ein — die
+   Einstellung gilt dann fuer alle Projekte. */
+var mitlaufAn=false;
+try{ mitlaufAn = localStorage.getItem("takewright_mitlauf")==="1"; }catch(e){}
 (function mitlaufAufbauen(){
   var k=document.getElementById("trMitlauf");
   if(!k) return;
@@ -4390,13 +4415,13 @@ document.getElementById("expjson").addEventListener("click", function(){
   save(new Blob([JSON.stringify(payload(),null,2)],{type:"application/json"}), "timecode_abgleich.json");
   toast("Gesichert — liegt bei den Downloads");
 });
-document.getElementById("expclip").addEventListener("click", function(){
+function clipExport(){
   var t=JSON.stringify(payload(),null,2);
   if(navigator.clipboard){
     navigator.clipboard.writeText(t).then(function(){ toast("Kopiert — ins Gespräch einfügen"); },
                                          function(){ toast("Kopieren ging nicht"); });
   }
-});
+}
 /* ================= Word-Tabelle =================
    Ein .docx ist ein ZIP mit ein paar XML-Dateien. Wir schreiben es ohne
    fremde Bibliothek: unkomprimiert abgelegt, das erspart den Packer und
@@ -4920,8 +4945,7 @@ function wordExport(nachRollen){
         ? "Separierung gesichert — "+anzahlRollen+" Rollen"
         : zeilen.length+" Einsätze als DOCX gesichert");
 }
-document.getElementById("expword").addEventListener("click", function(){ wordExport(false); });
-document.getElementById("expwordrollen").addEventListener("click", function(){ wordExport(true); });
+/* Ausgeloest wird ueber die beiden Menues in der Kopfzeile. */
 
 
 /* ---------- Arbeitsstand auf die Festplatte ----------
@@ -5057,7 +5081,7 @@ function standAusDateiHolen(){
 
 /* Von Hand: Stand als Datei herunterladen bzw. eine solche einlesen —
    fuer den Wechsel auf einen anderen Rechner. */
-document.getElementById("standSichernJetzt").addEventListener("click", function(){
+function standAlsDatei(){
   var text; try{ text=localStorage.getItem(SPEICHER); }catch(e){ text=null; }
   if(!text) text=standVoll(standInhalt());
   var d=new Date();
@@ -5065,9 +5089,9 @@ document.getElementById("standSichernJetzt").addEventListener("click", function(
           +"-"+pad(d.getDate())+".json";
   save(new Blob([text],{type:"application/json"}), name.replace(/[^\w\-. ]+/g,"_"));
   toast("Arbeitsstand gesichert — liegt bei den Downloads");
-});
+}
 
-document.getElementById("ablageLesen").addEventListener("click", function(){
+function standEinlesen(){
   var w=document.createElement("input");
   w.type="file"; w.accept=".json,application/json";
   w.addEventListener("change", function(){
@@ -5084,7 +5108,7 @@ document.getElementById("ablageLesen").addEventListener("click", function(){
     });
   });
   w.click();
-});
+}
 
 /* ---------- Excel-Ausgabe ----------
    Ein echtes .xlsx ist, wie die .docx, nur ein ZIP mit XML darin — und den
@@ -5164,7 +5188,7 @@ function xlsxBauen(zeilen){
   var dateien=Object.keys(teile).map(function(n){ return {name:n, bytes:enc.encode(teile[n])}; });
   return zipBauen(dateien);
 }
-document.getElementById("expxlsx").addEventListener("click", function(){
+function xlsxExport(){
   var zeilen=xlsxAusschnitt();
   if(zeilen!==null && zeilen.length>DEMO_TAKES) zeilen=zeilen.slice(0,DEMO_TAKES);
   if(zeilen===null){ toast(cues.length ? "Noch nichts bearbeitet — nichts zu exportieren" : "Kein Buch geladen"); return; }
@@ -5172,7 +5196,7 @@ document.getElementById("expxlsx").addEventListener("click", function(){
     {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
   save(blob, ("Synchronbuch – "+buchTitel()).replace(/[^\w\-. –]+/g,"_")+".xlsx");
   toast(zeilen.length+" Takes als Excel-Tabelle gesichert");
-});
+}
 
 /* ---------- Sicherungspunkte ----------
    Der laufende Stand wird ohnehin dauernd geschrieben. Ein Sicherungspunkt
@@ -5362,14 +5386,14 @@ function pdfHtml(){
   h.push('</body></html>');
   return h.join("\n");
 }
-document.getElementById("exppdf").addEventListener("click", function(){
+function pdfExport(){
   var seite=pdfHtml();
   if(seite===null){ toast(cues.length ? "Noch nichts bearbeitet — nichts zu drucken" : "Kein Buch geladen"); return; }
   var w=window.open("", "_blank");
   if(!w){ toast("Der Browser hat das Druckfenster unterdrückt"); return; }
   w.document.write(seite); w.document.close();
   toast("Im Druckdialog „Als PDF speichern“ wählen");
-});
+}
 
 /* ---------- Film groesser ziehen ----------
    Die Trennlinie zwischen Film und Buch laesst sich greifen. Die Buchbreite
@@ -5997,6 +6021,41 @@ document.getElementById("projForm").addEventListener("submit", function(e){
     })
     .catch(function(){ toast("Nicht angelegt — läuft der Takewrite-Server?"); });
 });
+
+/* ---------- Die beiden Ausgabemenues ----------
+   Zwei Knoepfe statt sieben: Export und Separierung, jeder faechert sich in
+   die Formate auf. Was entfallen ist — Zwischenablage, "Stand als Datei",
+   "Stand einlesen", der Haken fuer unbearbeitete Zeilen —, war entweder
+   doppelt oder wird vom Server ohnehin erledigt. */
+(function(){
+  function zu(){ [].forEach.call(document.querySelectorAll(".expliste"),
+                                 function(x){ x.style.display="none"; }); }
+  function menue(knopf, liste){
+    var k=document.getElementById(knopf), l=document.getElementById(liste);
+    k.addEventListener("click", function(e){
+      e.stopPropagation();
+      var auf = l.style.display==="none";
+      zu();                                  /* immer nur eines offen */
+      l.style.display = auf ? "" : "none";
+    });
+  }
+  menue("expMenu","expListe");
+  menue("sepMenu","sepListe");
+  document.addEventListener("click", zu);
+  document.getElementById("expListe").addEventListener("click", function(e){
+    var b=e.target.closest && e.target.closest("[data-exp]"); if(!b) return;
+    var was=b.getAttribute("data-exp");
+    zu();
+    if(was==="docx") wordExport(false);
+    else if(was==="pdf") pdfExport();
+    else if(was==="xlsx") xlsxExport();
+  });
+  document.getElementById("sepListe").addEventListener("click", function(e){
+    var b=e.target.closest && e.target.closest("[data-sep]"); if(!b) return;
+    zu();
+    if(b.getAttribute("data-sep")==="docx") wordExport(true);
+  });
+})();
 
 document.getElementById("rohbuchOben").addEventListener("click", rohbuchWaehlen);
 document.getElementById("rohbuchGross").addEventListener("click", rohbuchWaehlen);
