@@ -785,6 +785,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .colophon{margin-top:30px;padding-top:16px;border-top:1px solid var(--rule);font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink-3)}
 .colophon a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--rule)}
 .colophon a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+/* Das Herz traegt seine eigene Farbe, damit es nicht als Schriftzeichen
+   untergeht — im Nachtmodus wie am Tag dieselbe. */
+.colophon .herz{color:#C2402F;font-style:normal;letter-spacing:0}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);background:var(--ink);color:var(--ground);font-family:var(--font-mono);font-size:12px;letter-spacing:.05em;padding:11px 20px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
 /* Platz fuer das Kreuz, das die Meldung schliesst */
@@ -1194,7 +1197,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 <!-- "Fassung 1" stand schon als Schild in der Kopfzeile, und "Der Film bleibt
      auf diesem Rechner" steht dort, wo es zaehlt: in der Startebene neben
      "Datei wählen". Beides hier war Wiederholung. -->
-<p class="colophon">Takewrite · <a href="https://takewrite.de" target="_blank" rel="noopener">takewrite.de</a> · von <a href="https://peterpanonweed.github.io/adamdev/" target="_blank" rel="noopener">adamdev</a></p>
+<p class="colophon">Takewrite · <a href="https://takewrite.de" target="_blank" rel="noopener">takewrite.de</a> · made with <span class="herz">&#10084;&#65039;</span> by <a href="https://peterpanonweed.github.io/adamdev/" target="_blank" rel="noopener">adamdev</a></p>
 </div>
 
 <input type="file" id="file" accept="video/*,.mkv,.mov,.mxf" style="display:none">
