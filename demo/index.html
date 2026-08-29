@@ -74,31 +74,44 @@ header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
    der Fortschrittsbalken bleiben aus jeder Scrollhoehe erreichbar. Wie hoch
    die Kopfzeile gerade ist, sagt --kopf; bei schmalem Fenster bricht sie um
    und wird hoeher, darum wird der Wert gemessen und nicht geraten. */
+/* EINE Zeile — nowrap, damit nichts umbricht. Was zu breit wird, kuerzt sich
+   ab: Die Vorschau der Anmerkungen trieb die Zeile vorher auf zwei. */
 .phead.buchkopf{position:sticky;top:var(--kopf,59px);z-index:30;
-  background:var(--surface);flex-wrap:wrap;row-gap:5px;padding:7px 15px 0}
-.phead.buchkopf .fortschritt{flex:0 0 100%;margin:0}
-.phead.buchkopf .schalter{white-space:nowrap}
-/* Die Anmerkungen stehen zugeklappt in derselben Zeile und nehmen erst beim
-   Aufklappen die ganze Breite. */
-.phead.buchkopf .notizen{margin:0;border:0;background:none;flex:0 0 auto;min-width:0}
-.phead.buchkopf .notizen[open]{flex:0 0 100%}
-.phead.buchkopf .notizen>summary{padding:0;white-space:nowrap}
-.phead.buchkopf .notizen textarea{margin-top:6px;width:100%}
+  background:var(--surface);flex-wrap:nowrap;padding:7px 15px}
+.phead.buchkopf .schalter{white-space:nowrap;flex:0 0 auto}
+.phead.buchkopf .notizen{margin:0;border:0;background:none;
+  flex:0 1 auto;min-width:0;overflow:hidden}
+.phead.buchkopf .notizen>summary{padding:0;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+/* Aufgeklappt wird das Feld ueber die Zeile gelegt, statt sie zu sprengen */
+.phead.buchkopf .notizen[open]{position:static}
+.phead.buchkopf .notizen[open]>summary{overflow:visible}
+.phead.buchkopf .notizen textarea{position:absolute;left:15px;right:15px;
+  top:calc(100% - 2px);width:auto;z-index:5;
+  border:1px solid var(--rule);border-radius:4px;background:var(--surface)}
+/* Der Balken klebt mit — er gehoert zur Kopfzeile, nicht zur Liste */
+.buchkopf + .fortschritt{position:sticky;z-index:30;
+  top:calc(var(--kopf,59px) + var(--buchkopf,41px))}
 
 /* Die Suche in der Kopfzeile: eigene Zeile ganz unten, rechtsbuendig — sie
    sitzt damit auf der schwarzen Linie und ist aus jeder Scrollhoehe da. */
-/* Sie teilt sich die Zeile mit den Knoepfen und bricht erst um, wenn es eng
-   wird. Eine eigene Zeile sah zwar grosszuegig aus, machte die Kopfzeile aber
-   von 59 auf 112 Pixel hoch — und genau die wollten wir dem Buch geben. */
-.suchzeile{flex:1 1 240px;display:flex;align-items:center;justify-content:flex-end;
-  gap:10px;min-width:0}
-.suchzeile .suche{flex:1 1 auto;max-width:420px;min-width:0;
-  font-size:13.5px;padding:6px 11px}
-.suchzeile .cnt{font-family:var(--font-mono);font-size:11px;color:var(--ink-3)}
-/* In der App verborgen, in der Demo sichtbar — dort steht jemand zum ersten
-   Mal davor und darf ruhig lesen, worum es geht. demo_bauen.py blendet ihn
-   wieder ein. */
-.demo-nur{display:inline}
+/* Die Suche haengt von unten an der schwarzen Linie.
+
+   Der Halter ist null Pixel hoch und klebt auf Hoehe der Kopfzeilenunterkante;
+   die Box ragt aus ihm heraus. Dadurch kostet sie keine Zeile Hoehe — ein
+   erster Versuch mit einer eigenen Kopfzeilenzeile machte den Kopf von 59 auf
+   112 Pixel hoch, also genau das Gegenteil dessen, was das Buch braucht. */
+.suchhalter{position:sticky;top:var(--kopf,59px);z-index:55;height:0}
+.suchbox{position:absolute;right:0;top:0;display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:2px solid var(--ink);border-top:0;
+  border-radius:0 0 7px 7px;padding:7px 13px 8px;
+  box-shadow:0 5px 16px rgba(0,0,0,.13)}
+.suchbox .suche{width:min(330px,32vw);font-family:var(--font-mono);font-size:12px;
+  padding:5px 9px;background:var(--ground);color:var(--ink);
+  border:1px solid var(--rule);border-radius:3px;outline:none}
+.suchbox .suche:focus{border-color:var(--accent)}
+.suchbox .cnt{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-3);
+  white-space:nowrap}
 
 /* Die Ausgabemenues: der Knopf traegt die Liste unter sich */
 .ausgabe{position:relative;display:inline-flex}
@@ -804,10 +817,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 <header class="cover">
   <div class="marke">
     <span class="wortmarke" role="img" aria-label="Takewrite"></span>
-    <!-- Der Claim gehoert auf die Landingpage, nicht ueber den Arbeitsplatz:
-         Wer hier sitzt, ist ueberzeugt. Er kostete die Breite, die Suche und
-         Knoepfe brauchen, um in EINE Zeile zu passen. -->
-    <span class="claim demo-nur">Synchronbücher am Bild schreiben</span>
+    <span class="claim">Synchronbücher am Bild schreiben</span>
     <span class="ver" style="color:var(--warm);border-color:var(--warm)" title="Demo-Fassung — auf 40 Takes begrenzt">1.0 · DEMO — 40 Takes</span>
     <span class="projekt" id="projektName" style="display:none"></span>
     <span class="demohinweis">Zum Ausprobieren &mdash; hier sichert nichts von allein. Der gr&uuml;ne Knopf legt deinen Stand als Datei ab, <b>Stand einlesen</b> holt ihn zur&uuml;ck.</span>
@@ -845,14 +855,18 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     </button>
     <button class="mini" id="punktListe" title="Frühere Sicherungspunkte ansehen und zurückholen">Sicherungen…</button>
   </div>
-  <!-- Die Suche haengt an der schwarzen Linie und ist damit immer da. Sie
-       gehoert nicht in die Buchspalte: Gesucht wird zwischendurch, aus jeder
-       Scrollhoehe, und in der Spalte kostete sie eine ganze Zeile. -->
-  <div class="suchzeile">
+</header>
+
+<!-- Die Suche haengt von unten an der schwarzen Linie: ein eigenes Element,
+     das wie die Kopfzeile nicht mitscrollt. Der Halter ist null Pixel hoch,
+     die Box ragt aus ihm heraus — so kostet sie keine einzige Zeile Hoehe
+     und ist trotzdem aus jeder Scrolltiefe erreichbar. -->
+<div class="suchhalter">
+  <div class="suchbox">
     <span class="cnt" id="trCnt">—</span>
     <input type="search" id="trSuche" class="suche" placeholder="Suchen: Rolle oder Text" spellcheck="false" autocomplete="off" title="Zeigt nur Zeilen, in denen Rolle oder Text das Gesuchte enthalten · Esc leert das Feld">
   </div>
-</header>
+</div>
 
 <div class="app">
 
@@ -1147,12 +1161,12 @@ input[type=range]{width:100%;accent-color:var(--accent)}
             placeholder="Kommt aufs Titelblatt unter die Synopsis. Zum Beispiel: Der Kommissar wird durchgehend „Chef“ gerufen. Oder Aussprachehinweise, eine Zeile je Anmerkung."></textarea>
         </details>
         <button class="mini" id="trFragen" style="display:none" title="Nur die markierten Zeilen zeigen — nochmal klicken zeigt wieder alle">&#9873; 0</button>
-        <span class="sp" style="flex:1"></span>
+        <span class="sp" style="flex:1 1 0;min-width:0"></span>
         <button class="mini" id="trKleiner" title="Schrift kleiner">A−</button>
         <span class="trhint" id="trGroesseAnzeige"></span>
         <button class="mini" id="trGroesser" title="Schrift größer">A+</button>
-        <div class="fortschritt"><i id="trBalken"></i></div>
       </div>
+      <div class="fortschritt"><i id="trBalken"></i></div>
       <!-- Der Einstieg ins Buch, so gross wie er wiegt. Nur zu sehen, solange
            kein Take da ist: Ein Rohbuch laedt man einmal, danach waere der
            Knopf nur noch im Weg. Der kleine "Rohbuch…" in der Kopfzeile
@@ -6091,13 +6105,18 @@ document.getElementById("projForm").addEventListener("submit", function(e){
    dann falsch, und der Buchkopf ragte darunter hervor. */
 (function(){
   var kopf=document.querySelector("header.cover");
+  var bk=document.querySelector(".phead.buchkopf");
   function messen(){
-    document.documentElement.style.setProperty(
-      "--kopf", Math.round(kopf.getBoundingClientRect().height)+"px");
+    var w=document.documentElement.style;
+    w.setProperty("--kopf", Math.round(kopf.getBoundingClientRect().height)+"px");
+    if(bk) w.setProperty("--buchkopf", Math.round(bk.getBoundingClientRect().height)+"px");
   }
   messen();
   window.addEventListener("resize", messen);
-  if(window.ResizeObserver) new ResizeObserver(messen).observe(kopf);
+  if(window.ResizeObserver){
+    var o=new ResizeObserver(messen);
+    o.observe(kopf); if(bk) o.observe(bk);
+  }
 })();
 
 document.getElementById("rohbuchOben").addEventListener("click", rohbuchWaehlen);
