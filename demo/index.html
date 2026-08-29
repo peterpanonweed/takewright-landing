@@ -3714,6 +3714,34 @@ function zeitreise(von, nach, wort){
 function rueckgaengig(){ zeitreise(undoStapel, redoStapel, "Rückgängig gemacht"); }
 function wiederholen(){ zeitreise(redoStapel, undoStapel, "Wiederholt"); }
 
+/* ---------- Der Rueckgaengig-Stapel ueberlebt den Projektwechsel ----------
+   Bisher lebte er nur in der Sitzung: Wer das Projekt wechselte, hatte danach
+   ein leeres Strg+Z. Bei einem Werkzeug, in dem man staendig hin und her
+   springt, ist das die haeufigste Art, eine Ruecknahme zu verlieren.
+
+   Mitgenommen werden nur die letzten fuenf Schritte. Jeder ist eine Vollkopie
+   des Buches — bei einem grossen Buch fast 300 KB —, und der Browser gibt je
+   Adresse nur wenige Megabyte her. Fuenf decken den Fall ab, um den es geht:
+   "ich habe gewechselt und wollte das letzte noch zurueck". Passt es nicht,
+   werden es zwei, und passt auch das nicht, bleibt es wie vorher. */
+var UNDO_SPEICHER="takewrite_undo_"+location.pathname, UNDO_MITNEHMEN=5;
+function undoMitnehmen(){
+  try{
+    var raus=undoStapel.slice(-UNDO_MITNEHMEN), text=JSON.stringify(raus);
+    if(text.length>1600000){ raus=undoStapel.slice(-2); text=JSON.stringify(raus); }
+    localStorage.setItem(UNDO_SPEICHER, text);
+  }catch(e){
+    try{ localStorage.removeItem(UNDO_SPEICHER); }catch(e2){}
+  }
+}
+function undoHolen(){
+  try{
+    var d=JSON.parse(localStorage.getItem(UNDO_SPEICHER)||"null");
+    if(Array.isArray(d)) undoStapel=d.filter(function(x){ return typeof x==="string" && x.length; });
+  }catch(e){}
+}
+window.addEventListener("pagehide", undoMitnehmen);
+
 /* Zusammenfuehren statt ersetzen: die Zeilen aus der SRT bleiben die Grundlage,
    damit eine neu gelieferte Uebersetzung durchschlaegt. Vom gespeicherten Stand
    kommen Rolle, gesetzte Zeit, Sichtbarkeit — und der Text nur dann, wenn er
@@ -6002,6 +6030,7 @@ document.getElementById("projKacheln").addEventListener("click", function(e){
      im Film gleich mit — sie ist es, die den Arbeitsplatz zurueckbringt. */
   sichern();
   stelleMerken();
+  undoMitnehmen();                    /* Strg+Z soll drueben weitergehen */
   einstellungenAbschicken(true);      /* Offenes noch loswerden, bevor es fort ist */
   var wohin="http://localhost:"+k.getAttribute("data-port")+"/Takewright.html";
   /* Laeuft der Server dieses Projekts nicht, fuehrte der Klick bisher auf eine
@@ -6187,6 +6216,7 @@ document.getElementById("rohbuchGross").addEventListener("click", rohbuchWaehlen
 
 projekteLaden();
 filmeSuchen();
+undoHolen();
 
 var demoGesichertBei = -1;
 function demoOffen(){
