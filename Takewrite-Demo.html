@@ -205,6 +205,9 @@ h1{font-family:var(--font-display);font-weight:600;font-size:clamp(25px,3.4vw,38
   cursor:pointer;background:none;color:var(--ink-3)}
 .lizchip.warn{border-color:var(--warm);color:var(--warm);background:var(--warm-soft)}
 .lizchip.stop{border-color:var(--bad);color:var(--bad);background:var(--bad-soft)}
+.lizchip:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.lizchip.warn:hover{background:var(--warm);border-color:var(--warm);color:var(--surface)}
+.lizchip.stop:hover{background:var(--bad);border-color:var(--bad);color:var(--surface)}
 .lizfeld{position:fixed;inset:0;background:rgba(8,9,11,.5);z-index:900;
   display:none;align-items:center;justify-content:center;padding:20px}
 .lizfeld.auf{display:flex}
@@ -218,6 +221,9 @@ h1{font-family:var(--font-display);font-weight:600;font-size:clamp(25px,3.4vw,38
   word-break:break-all;background:var(--surface-2);border:1px solid var(--rule);
   border-radius:3px;padding:9px 11px;margin:8px 0;user-select:all;cursor:text}
 .lizkarte .reihe{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.lizkarte .anfblock{margin:8px 0}
+.lizkarte .anfblock code{margin:0;border-radius:3px 3px 0 0;border-bottom:0}
+.lizkarte .anfblock .mini{display:block;width:100%;border-radius:0 0 3px 3px;padding:8px;text-align:center;font-size:10.5px}
 .covertail{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--ink-3);text-align:right;line-height:1.7}
 
 :root{--buch:660px}
@@ -380,6 +386,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .mini{font-family:var(--font-mono);font-size:10px;background:transparent;color:var(--ink-3);border:1px solid var(--rule);padding:4px 7px;cursor:pointer;border-radius:2px;letter-spacing:.06em}
 .mini:hover{border-color:var(--accent);color:var(--accent)}
 .mini.del:hover{border-color:var(--bad);color:var(--bad)}
+.mini.haupt{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.mini.haupt:hover{border-color:var(--accent);color:var(--surface);filter:brightness(1.14)}
 
 .verdict{padding:11px 13px;font-size:13px;margin-bottom:13px;border-left:3px solid var(--ink-3);background:var(--surface-2)}
 .verdict.ok{border-left-color:var(--good);background:var(--good-soft)}
@@ -6338,11 +6346,11 @@ function lizenzZeigen(){
   if(!chip || !LIZ) return;
   var klasse = "lizchip", text = "";
   if(!LIZ.darf){
-    klasse += " stop"; text = "gesperrt";
+    klasse += " stop"; text = "gesperrt · freischalten";
   } else if(LIZ.art === "schonfrist"){
-    klasse += " warn"; text = "Probe · noch " + tage(LIZ.rest|0);
+    klasse += " warn"; text = "Probe · noch " + tage(LIZ.rest|0) + " · freischalten";
   } else if(LIZ.art === "schein" && (LIZ.rest|0) <= 21){
-    klasse += " warn"; text = "Lizenz endet in " + tage(LIZ.rest|0);
+    klasse += " warn"; text = "Lizenz endet in " + tage(LIZ.rest|0) + " · verlängern";
   } else {
     return;                             /* alles in Ordnung: kein Wort */
   }
@@ -6380,14 +6388,14 @@ function lizenzKarte(){
     t.push("<p>Zum Freischalten oder Verlängern diese Zeile an "
          + "<b>" + fluchten(LIZ.kontakt || "support@takewrite.de")
          + "</b> schicken:</p>");
-    t.push("<code id=\"lizAnf\">" + fluchten(LIZ.anforderung) + "</code>");
+    t.push("<div class=\"anfblock\"><code id=\"lizAnf\">"
+         + fluchten(LIZ.anforderung) + "</code>"
+         + "<button class=\"mini haupt\" id=\"lizKopie\">Zeile kopieren</button></div>");
     t.push("<p class=\"kleiner\">Die Antwort ist eine Datei <b>lizenz.dat</b>. "
          + "Die gehört in denselben Ordner wie „Takewrite starten.bat“. "
          + "Darin steht keine Seriennummer, nur ihre Prüfsumme.</p>");
   }
-  t.push("<div class=\"reihe\">"
-       + (LIZ.anforderung ? "<button class=\"mini\" id=\"lizKopie\">Zeile kopieren</button>" : "")
-       + "<button class=\"mini\" id=\"lizZu\">Schließen</button></div>");
+  t.push("<div class=\"reihe\"><button class=\"mini\" id=\"lizZu\">Schließen</button></div>");
   karte.innerHTML = t.join("");
   feld.classList.add("auf");
 
