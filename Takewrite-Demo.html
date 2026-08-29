@@ -4163,6 +4163,12 @@ function rohbuchLaden(datei){
     cues=neueCues;
     var wieder=standLaden();
     trRender(); paint();
+    /* Sofort sichern. Bis zum 29.08.2026 stand hier nichts: Ein frisch
+       importiertes Rohbuch lebte nur im Arbeitsspeicher, und der erste
+       Projektwechsel loeschte es aus. Wer importiert, hat gearbeitet — das
+       gehoert auf die Platte, nicht in die Hoffnung auf die naechste
+       Aenderung, die eine Sicherung ausloest. */
+    sichern();
     toast(wieder ? "Stand wiederhergestellt — "+cues.length+" Zeilen"
         : ohneZeit ? cues.length+" Zeilen geladen — ohne Timecodes. Setz sie am Bild an."
                    : cues.length+" Zeilen geladen");
