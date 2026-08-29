@@ -70,6 +70,15 @@ header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
 /* Der Sicherungsknopf steht oben und faellt auf — er ist die Handlung,
    die man nach jeder Arbeitsstrecke tun soll. */
 .sicherbox{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+/* Der Buchkopf klebt unter der Kopfzeile: Suche, Zaehler, Schriftgroesse und
+   der Fortschrittsbalken bleiben aus jeder Scrollhoehe erreichbar. Wie hoch
+   die Kopfzeile gerade ist, sagt --kopf; bei schmalem Fenster bricht sie um
+   und wird hoeher, darum wird der Wert gemessen und nicht geraten. */
+.phead.buchkopf{position:sticky;top:var(--kopf,59px);z-index:30;
+  background:var(--surface);flex-wrap:wrap;row-gap:6px}
+.phead.buchkopf .fortschritt{flex:0 0 100%;margin:0}
+.phead.buchkopf .schalter{white-space:nowrap}
+
 /* Die Ausgabemenues: der Knopf traegt die Liste unter sich */
 .ausgabe{position:relative;display:inline-flex}
 .expliste{position:absolute;top:calc(100% + 4px);right:0;z-index:40;min-width:150px;
@@ -789,7 +798,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
        der Mitte. -->
   <div class="sicherbox">
     <span id="punktStand"></span>
-    <button class="mini" id="rohbuchOben" title="Rohbuch laden — SRT-Untertitel, Textdatei, Excel oder Word">Rohbuch…</button>
+    <button class="mini" id="rohbuchOben" title="Ein vorhandenes Rohbuch als Gerüst laden — SRT-Untertitel, Textdatei, Excel oder Word">Rohbuch-Import</button>
     <!-- Die Ausgabe gehoert hierher: Sie ist das Ergebnis, nicht eine
          Einstellung in einer Spalte. Zwei Knoepfe, die sich in Formate
          auffaechern — das spart die halbe Werkzeugleiste von vorher. -->
@@ -1017,6 +1026,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           <kbd>←</kbd><kbd>→</kbd> 1 Bild · mit <kbd>Shift</kbd> 5 Bilder · <kbd>Leer</kbd> oder Klick aufs Bild — Abspielen/Anhalten · Vollbild: Schaltfläche oben rechts im Bild<br>
           <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd> Shuttle zurück / Stopp / vor — mehrfach drücken beschleunigt<br>
           <kbd>Pos1</kbd><kbd>Ende</kbd> Anfang und Schluss<br>
+          <b>Zeile</b> &nbsp;<b>&#9654;</b> Film springt zur Zeile · <b>Timecode 2&times;</b> Zeile bekommt die Filmzeit · <b>Rechtsklick</b> Zeit eintippen<br>
           <b>Buch</b> &nbsp;<kbd>W</kbd><kbd>S</kbd> Zeile hoch und runter · <kbd>Enter</kbd> Zeit setzen<br>
           <kbd>E</kbd> oder <kbd>N</kbd> Neuer Take · <kbd>Esc</kbd> Auswahl lösen<br>
           <kbd>Strg</kbd>+<kbd>Z</kbd> Rückgängig · <kbd>Strg</kbd>+<kbd>Y</kbd> Wiederholen<br>
@@ -1088,13 +1098,22 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <aside>
 
     <div class="panel">
-      <div class="phead">
-        <h3>Buch</h3>
+      <!-- Eine Zeile statt drei. Die Ueberschrift "Buch" ist entfallen — dass
+           das Buch das Buch ist, sieht man daran, dass Zeilen drinstehen. Der
+           Knopf "Textdatei…" ebenso: Er tat dasselbe wie Rohbuch-Import oben.
+           Und die Zeile klebt unter der Kopfzeile fest, damit Suche und
+           Schriftgroesse aus jeder Scrollhoehe erreichbar bleiben. -->
+      <div class="phead buchkopf">
         <input type="search" id="trSuche" class="suche" placeholder="Suchen: Rolle oder Text" spellcheck="false" autocomplete="off" title="Zeigt nur Zeilen, in denen Rolle oder Text das Gesuchte enthalten · Esc leert das Feld">
         <span class="cnt" id="trCnt">—</span>
-        <button class="mini" id="trPick" title="Rohbuch laden — SRT-Untertitel oder Textdatei">Textdatei…</button>
+        <label class="schalter mitlauf" title="Während der Film läuft, rollt die Liste zur gerade gesprochenen Zeile mit. Beim Schreiben bleibt sie in jedem Fall stehen."><input type="checkbox" id="trMitlauf"><span>folgt dem Film</span></label>
+        <button class="mini" id="trFragen" style="display:none" title="Nur die markierten Zeilen zeigen — nochmal klicken zeigt wieder alle">&#9873; 0</button>
+        <span class="sp" style="flex:1"></span>
+        <button class="mini" id="trKleiner" title="Schrift kleiner">A−</button>
+        <span class="trhint" id="trGroesseAnzeige"></span>
+        <button class="mini" id="trGroesser" title="Schrift größer">A+</button>
+        <div class="fortschritt"><i id="trBalken"></i></div>
       </div>
-      <div class="fortschritt"><i id="trBalken"></i></div>
       <!-- Der Einstieg ins Buch, so gross wie er wiegt. Nur zu sehen, solange
            kein Take da ist: Ein Rohbuch laedt man einmal, danach waere der
            Knopf nur noch im Weg. Der kleine "Rohbuch…" in der Kopfzeile
@@ -1113,20 +1132,6 @@ input[type=range]{width:100%;accent-color:var(--accent)}
         <textarea id="kfAnmerkungen" rows="4" spellcheck="false"
           placeholder="Kommt aufs Titelblatt unter die Synopsis. Zum Beispiel: Der Kommissar wird durchgehend „Chef“ gerufen. Oder Aussprachehinweise, eine Zeile je Anmerkung."></textarea>
       </details>
-      <div class="trbar">
-        <label class="schalter mitlauf" title="Während der Film läuft, rollt die Liste zur gerade gesprochenen Zeile mit. Beim Schreiben bleibt sie in jedem Fall stehen."><input type="checkbox" id="trMitlauf"><span>Liste folgt dem Film</span></label>
-        <button class="mini" id="trLoesen" title="Nimmt der ausgewählten Zeile die gesetzte Zeit wieder weg und zählt sie erneut als unerledigt">Zeit lösen</button>
-        <button class="mini" id="trFragen" style="display:none" title="Nur die markierten Zeilen zeigen — nochmal klicken zeigt wieder alle">&#9873; 0</button>
-        <span class="sp"></span>
-        <button class="mini" id="trKleiner" title="Schrift kleiner">A−</button>
-        <span class="trhint" id="trGroesseAnzeige"></span>
-        <button class="mini" id="trGroesser" title="Schrift größer">A+</button>
-      </div>
-      <div class="richtungen">
-        <span><b>&#9654;</b> Film springt zur Zeile</span>
-        <span><b>Timecode 2&times;</b> Zeile bekommt die Filmzeit</span>
-        <span><b>Rechtsklick</b> Zeit eintippen</span>
-      </div>
       <div class="trbar trhinweiszeile leer" id="trHintZeile">
         <span class="trhint" id="trHint"></span>
       </div>
@@ -1780,16 +1785,9 @@ function trRender(){
      Ballast — der kleine "Rohbuch…" in der Kopfzeile bleibt ja erreichbar. */
   var rg=document.getElementById("rohbuchGross");
   if(rg) rg.style.display = cues.length ? "none" : "";
-  /* Der Wähler zeigt sich nur, wenn nichts da ist — sonst lädt die Datei von selbst */
-  /* Frueher verschwand der Knopf, sobald etwas geladen war — wer die falsche
-     Datei erwischt hatte, kam nicht mehr an die richtige. Er bleibt jetzt, und
-     beschriftet sich um. */
-  var pick=document.getElementById("trPick");
-  pick.style.display="";
-  pick.textContent = cues.length ? "Andere Datei…" : "Textdatei…";
-  pick.title = cues.length
-    ? "Ein anderes Rohbuch laden — SRT oder Textdatei. Der bisherige Stand bleibt gesichert."
-    : "Rohbuch laden — SRT-Untertitel oder Textdatei mit einer Zeile je Take";
+  /* Der eigene Knopf ist entfallen — "Rohbuch-Import" in der Kopfzeile tut
+     dasselbe und ist von ueberall erreichbar, weil die Kopfzeile stehen
+     bleibt. Zwei Wege zur selben Handlung waren einer zu viel. */
   if(!cues.length){ anfangZeigen(); return; }
   /* Erst zaehlen, dann faerben. Die Einstufung als Mengenrolle haengt an der
      Zahl der Takes; stand die Zaehlung hinterher, waeren die Farben immer die
@@ -3060,6 +3058,18 @@ function tcBearbeiten(span){
   }
   function uebernehmen(beimVerlassen){
     if(fertig) return;
+    /* Leeres Feld heisst: Zeit zuruecknehmen. Der Knopf "Zeit lösen" ist
+       entfallen — er stand dauerhaft in der Leiste fuer etwas, das man
+       selten braucht. Hier ist es dort, wo die Zeit steht. */
+    if(!feld.value.trim()){
+      if(!c.gesetzt){ abbrechen(); return; }   /* nichts zu loesen */
+      fertig=true;
+      var alteDauer=c.b-zeitVon(c);
+      c.tcSet=null; c.gesetzt=false; c.b=c.a+(alteDauer>0?alteDauer:1.5);
+      scharf=-1; scharfMachen(-1);
+      nachSortierenAnzeigen(c, i, "Zeile zurückgenommen");
+      return;
+    }
     var media=tcEingabeLesen(feld.value, prof());
     if(media===null){
       /* Beim Verlassen nicht festhalten, sondern verwerfen — sonst haengt
@@ -3116,14 +3126,10 @@ function scharfMachen(i){
   loeserPruefen();
 }
 
-/* "Zeit lösen" kann nur etwas tun, wenn eine gesetzte Zeile ausgewaehlt ist */
-function loeserPruefen(){
-  var b=document.getElementById("trLoesen");
-  var moeglich = scharf>=0 && cues[scharf] && cues[scharf].gesetzt;
-  b.disabled=!moeglich;
-  b.style.opacity=moeglich?"":"0.35";
-  b.style.cursor=moeglich?"pointer":"default";
-}
+/* Der Knopf "Zeit lösen" ist entfallen — zurueckgenommen wird jetzt am Ort:
+   Rechtsklick auf den Timecode, Feld leeren, Enter. Die Pruefung bleibt als
+   leere Funktion stehen, weil sie an mehreren Stellen gerufen wird. */
+function loeserPruefen(){}
 
 /* Nach einer Zeitaenderung die Liste wieder in Zeitfolge bringen.
    Wandert die Zeile, wird neu aufgebaut und sie in Sicht geholt — sonst
@@ -3185,19 +3191,6 @@ function zeitSetzen(zeitVorgabe){
   nachSortierenAnzeigen(c, vorher, "Zeile gesetzt");
 }
 
-function zeitLoesen(){
-  var i = scharf>=0 ? scharf : -1;
-  if(i<0){ toast("Erst eine Zeile scharf machen"); return; }
-  var c=cues[i];
-  if(!c.gesetzt){ toast("Diese Zeile war nicht gesetzt"); return; }
-  var dauer=c.b-zeitVon(c);
-  c.tcSet=null; c.gesetzt=false; c.b=c.a+(dauer>0?dauer:1.5);
-  scharf=-1; scharfMachen(-1);
-  /* Auch das Zuruecknehmen aendert die Zeit — also ebenfalls neu einsortieren */
-  nachSortierenAnzeigen(c, i, "Zeile zurückgenommen");
-}
-
-document.getElementById("trLoesen").addEventListener("click", zeitLoesen);
 
 /* ---------- Schriftgroesse der Buchspalte ---------- */
 var GROESSE="synchron_schrift", buchGroesse=24;
@@ -4006,10 +3999,6 @@ function rohbuchWaehlen(){
   });
   inp.click();
 }
-
-document.getElementById("trPick").addEventListener("click", function(){
-  rohbuchWaehlen();
-});
 
 /* ---------- Ein exportiertes Buch wieder einlesen ----------
    Der Arbeitsstand liegt im Browser und kann verlorengehen — beim Leeren der
@@ -6066,6 +6055,20 @@ document.getElementById("projForm").addEventListener("submit", function(e){
     zu();
     if(b.getAttribute("data-sep")==="docx") wordExport(true);
   });
+})();
+
+/* Wie hoch die Kopfzeile gerade ist — der Buchkopf klebt darunter. Bei
+   schmalem Fenster bricht sie um und wird hoeher; ein geratener Wert waere
+   dann falsch, und der Buchkopf ragte darunter hervor. */
+(function(){
+  var kopf=document.querySelector("header.cover");
+  function messen(){
+    document.documentElement.style.setProperty(
+      "--kopf", Math.round(kopf.getBoundingClientRect().height)+"px");
+  }
+  messen();
+  window.addEventListener("resize", messen);
+  if(window.ResizeObserver) new ResizeObserver(messen).observe(kopf);
 })();
 
 document.getElementById("rohbuchOben").addEventListener("click", rohbuchWaehlen);
