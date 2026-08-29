@@ -1243,7 +1243,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>D</kbd><kbd>F</kbd><kbd>G</kbd> &nbsp;(ON) (OFF) (CONT)</span><br>
           <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>C</kbd><kbd>V</kbd><kbd>B</kbd> &nbsp;(LACHT) (ATMER) (LAUTE)</span><br>
           <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>X</kbd> &nbsp;(REAKTION)</span><br>
-          <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>W</kbd><kbd>S</kbd><kbd>H</kbd><kbd>K</kbd> &nbsp;(WEINT) (SCHREIT) (HUSTET) (KUSSGERÄUSCH)</span><br>
+          <span style="margin-left:52px"><kbd>Alt</kbd>+ <kbd>W</kbd><kbd>S</kbd><kbd>H</kbd><kbd>K</kbd> &nbsp;(WEINT) (SCHREIT) (HUSTET) (KUSSG.)</span><br>
           <span style="margin-left:52px">änderbar unter <b>Tastenbelegung</b> oder per Rechtsklick auf die Schaltfläche</span><br>
           <span style="margin-left:52px"><kbd>Alt</kbd>+<kbd>A</kbd> Anmerkung des Autors <b>[</b><i>kursiv</i><b>]</b> · <kbd>Alt</kbd>+<kbd>M</kbd> <b>[</b><i>auf stumm</i><b>]</b></span><br>
           <span style="margin-left:52px">dieselben auch auf <kbd>F2</kbd> <kbd>F4</kbd> <kbd>F7</kbd> <kbd>F8</kbd> <kbd>F9</kbd></span><br>
@@ -2547,7 +2547,10 @@ var MARKEN=[
   {kennung:"weint",  zeigt:"(WEINT)",   ein:"(WEINT) ",   titel:"weint",         standard:"W"},
   {kennung:"schreit",zeigt:"(SCHREIT)", ein:"(SCHREIT) ", titel:"schreit",       standard:"S"},
   {kennung:"hustet", zeigt:"(HUSTET)",  ein:"(HUSTET) ",  titel:"hustet",        standard:"H"},
-  {kennung:"kuss",   zeigt:"(KUSSGERÄUSCH)", ein:"(KUSSGERÄUSCH) ", titel:"Kussgeräusch", standard:"K"}
+  /* Auf der Schaltflaeche steht die Kurzform — ausgeschrieben lief das Wort
+     aus dem Knopf heraus und schob die Taste daneben aus dem Bild. Ins Buch
+     geht weiterhin das ganze Wort. */
+  {kennung:"kuss",   zeigt:"(KUSSG.)", ein:"(KUSSGERÄUSCH) ", titel:"Kussgeräusch", standard:"K"}
 ];
 
 /* Die gewaehlten Tasten. Was hier nicht steht, behaelt seinen Standard. */
