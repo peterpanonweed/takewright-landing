@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Takewrite 1.0 · 2026-08-23 -->
+<!-- Takewrite 1.1 · 2026-08-29 -->
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -196,6 +196,28 @@ header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
 .eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
 h1{font-family:var(--font-display);font-weight:600;font-size:clamp(25px,3.4vw,38px);line-height:1.05;letter-spacing:-.015em;margin:0}
 .ver{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--ink-3);border:1px solid var(--rule);border-radius:2px;padding:1px 6px;align-self:center}
+/* Das Lizenzband. Es schweigt, solange alles in Ordnung ist. Waehrend der
+   Probezeit und in den letzten drei Wochen vor Ablauf muss es dagegen auffallen:
+   Der schlimmste denkbare Morgen ist der, an dem ein Buch abzugeben ist und das
+   Programm ohne Vorwarnung nicht mehr aufgeht. */
+.lizchip{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;
+  border:1px solid var(--rule);border-radius:2px;padding:1px 7px;align-self:center;
+  cursor:pointer;background:none;color:var(--ink-3)}
+.lizchip.warn{border-color:var(--warm);color:var(--warm);background:var(--warm-soft)}
+.lizchip.stop{border-color:var(--bad);color:var(--bad);background:var(--bad-soft)}
+.lizfeld{position:fixed;inset:0;background:rgba(8,9,11,.5);z-index:900;
+  display:none;align-items:center;justify-content:center;padding:20px}
+.lizfeld.auf{display:flex}
+.lizkarte{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+  padding:24px 26px;max-width:600px;width:100%;max-height:82vh;overflow:auto;
+  font-size:13px;line-height:1.6;color:var(--ink)}
+.lizkarte h3{margin:0 0 4px;font-size:15px;font-family:var(--font-display)}
+.lizkarte p{margin:10px 0}
+.lizkarte .kleiner{color:var(--ink-3);font-size:11.5px}
+.lizkarte code{display:block;font-family:var(--font-mono);font-size:10.5px;
+  word-break:break-all;background:var(--surface-2);border:1px solid var(--rule);
+  border-radius:3px;padding:9px 11px;margin:8px 0;user-select:all;cursor:text}
+.lizkarte .reihe{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
 .covertail{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--ink-3);text-align:right;line-height:1.7}
 
 :root{--buch:660px}
@@ -858,6 +880,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <span class="ver" style="color:var(--warm);border-color:var(--warm)" title="Demo-Fassung — auf 40 Takes begrenzt">1.0 · DEMO — 40 Takes</span>
     <span class="projekt" id="projektName" style="display:none"></span>
     <span class="demohinweis">Zum Ausprobieren &mdash; hier sichert nichts von allein. Der gr&uuml;ne Knopf legt deinen Stand als Datei ab, <b>Stand einlesen</b> holt ihn zur&uuml;ck.</span>
+    <button class="lizchip" id="lizChip" style="display:none" type="button"></button>
   </div>
   <div class="covertail">
     <div id="filename">— keine Datei —</div>
@@ -1258,6 +1281,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 <input type="file" id="file" accept="video/*,.mkv,.mov,.mxf" style="display:none">
 <div class="toast" id="toast"></div>
 <div class="toast frage" id="frage"></div>
+<div class="lizfeld" id="lizFeld"><div class="lizkarte" id="lizKarte"></div></div>
 
 <script>
 (function(){
@@ -5118,9 +5142,15 @@ function wordExport(nachRollen){
   }
 
   /* ---- Paket schnueren: alle Bestandteile der Vorlage, nur document.xml neu ---- */
+  /* Der Name des Lizenznehmers geht in die Eigenschaften jedes Buches. Das
+     haelt keinen Entschlossenen auf — wohl aber das realistischere Leck: dass
+     eine Einzelplatzlizenz im Studio ueber zehn Schreibtische wandert.
+     Niemand reicht eine Datei weiter, in der sein eigener Name steht. */
   var enc=new TextEncoder(), dateien=[];
   Object.keys(VORLAGE).forEach(function(name){
-    var inhalt = (name==="word/document.xml") ? neuerKoerper : VORLAGE[name];
+    var inhalt = (name==="word/document.xml")  ? neuerKoerper
+               : (name==="docProps/core.xml") ? eigenschaften(VORLAGE[name])
+               : VORLAGE[name];
     dateien.push({name:name, bytes:enc.encode(inhalt)});
   });
   var blob=zipBauen(dateien);
@@ -6282,7 +6312,129 @@ document.getElementById("rohbuchGross").addEventListener("click", rohbuchWaehlen
 
 projekteLaden();
 filmeSuchen();
+
+/* --------------------------------------------------------------- Lizenz ---
+   Geprueft wird im Server; hier wird nur angezeigt. Nach draussen geht dabei
+   keine Seriennummer — der Server schickt den Zustand, den kurzen Rechnercode
+   und, falls noetig, die Zeile fuer die Mail. */
+var LIZ = null;
+
+function lizenzHolen(){
+  var x = new XMLHttpRequest();
+  x.open("GET", "lizenz", true);
+  x.onload = function(){
+    if(x.status !== 200) return;        /* aelterer Server: dann eben nicht */
+    try { LIZ = JSON.parse(x.responseText); } catch(e){ return; }
+    lizenzZeigen();
+  };
+  x.onerror = function(){};
+  try { x.send(); } catch(e){}
+}
+
+function tage(n){ return n + (n === 1 ? " Tag" : " Tage"); }
+
+function lizenzZeigen(){
+  var chip = document.getElementById("lizChip");
+  if(!chip || !LIZ) return;
+  var klasse = "lizchip", text = "";
+  if(!LIZ.darf){
+    klasse += " stop"; text = "gesperrt";
+  } else if(LIZ.art === "schonfrist"){
+    klasse += " warn"; text = "Probe · noch " + tage(LIZ.rest|0);
+  } else if(LIZ.art === "schein" && (LIZ.rest|0) <= 21){
+    klasse += " warn"; text = "Lizenz endet in " + tage(LIZ.rest|0);
+  } else {
+    return;                             /* alles in Ordnung: kein Wort */
+  }
+  chip.className = klasse;
+  chip.textContent = text;
+  chip.style.display = "";
+  chip.title = LIZ.name ? ("Lizenziert für " + LIZ.name + ", gültig bis " + LIZ.bis)
+                        : ("Rechnercode " + LIZ.code);
+}
+
+function lizenzKarte(){
+  if(!LIZ) return;
+  var feld = document.getElementById("lizFeld");
+  var karte = document.getElementById("lizKarte");
+  var t = [];
+  if(LIZ.art === "schonfrist"){
+    t.push("<h3>Probezeit</h3>");
+    t.push("<p>Noch <b>" + tage(LIZ.rest|0) + "</b> von " + (LIZ.frist|0) + ". "
+         + "Danach startet Takewrite nicht mehr — geschriebene Bücher, "
+         + "Sicherungen und Einstellungen bleiben aber unberührt liegen.</p>");
+  } else if(LIZ.art === "schein"){
+    t.push("<h3>Lizenz</h3>");
+    t.push("<p>Ausgestellt auf <b>" + fluchten(LIZ.name || "—") + "</b>, "
+         + "gültig bis <b>" + fluchten(LIZ.bis || "—") + "</b> "
+         + "(noch " + tage(LIZ.rest|0) + ").</p>");
+  } else if(LIZ.art === "fremd"){
+    t.push("<h3>Diese Lizenz gehört zu einem anderen Rechner</h3>");
+    t.push("<p>Ein Schein gilt für einen Rechner. Bei einem Rechnerwechsel "
+         + "wird er umgeschrieben, das kostet nichts.</p>");
+  } else {
+    t.push("<h3>Abgelaufen</h3>");
+  }
+  t.push("<p class=\"kleiner\">Rechnercode: " + fluchten(LIZ.code || "—") + "</p>");
+  if(LIZ.anforderung){
+    t.push("<p>Zum Freischalten oder Verlängern diese Zeile an "
+         + "<b>mail@adamnuemm.de</b> schicken:</p>");
+    t.push("<code id=\"lizAnf\">" + fluchten(LIZ.anforderung) + "</code>");
+    t.push("<p class=\"kleiner\">Die Antwort ist eine Datei <b>lizenz.dat</b>. "
+         + "Die gehört in denselben Ordner wie „Takewrite starten.bat“. "
+         + "Darin steht keine Seriennummer, nur ihre Prüfsumme.</p>");
+  }
+  t.push("<div class=\"reihe\">"
+       + (LIZ.anforderung ? "<button class=\"mini\" id=\"lizKopie\">Zeile kopieren</button>" : "")
+       + "<button class=\"mini\" id=\"lizZu\">Schließen</button></div>");
+  karte.innerHTML = t.join("");
+  feld.classList.add("auf");
+
+  var zu = document.getElementById("lizZu");
+  if(zu) zu.addEventListener("click", function(){ feld.classList.remove("auf"); });
+  var kop = document.getElementById("lizKopie");
+  if(kop) kop.addEventListener("click", function(){
+    var s = LIZ.anforderung || "";
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(s).then(function(){ toast("Zeile kopiert."); },
+                                            function(){ lizMarkieren(); });
+    } else { lizMarkieren(); }
+  });
+}
+
+function lizMarkieren(){
+  /* Ohne Zwischenablage-Recht wenigstens markieren, damit Strg+C reicht. */
+  var e = document.getElementById("lizAnf");
+  if(!e) return;
+  var r = document.createRange(); r.selectNodeContents(e);
+  var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  toast("Markiert — mit Strg+C kopieren.");
+}
+
+function eigenschaften(xml){
+  if(!LIZ || !LIZ.name) return xml;
+  var n = fluchten(LIZ.name);
+  return xml.replace("<dc:creator>Takewrite</dc:creator>",
+                     "<dc:creator>" + n + "</dc:creator>")
+            .replace("<cp:lastModifiedBy>Takewrite</cp:lastModifiedBy>",
+                     "<cp:lastModifiedBy>" + n + "</cp:lastModifiedBy>");
+}
+
+function fluchten(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+(function(){
+  var chip = document.getElementById("lizChip");
+  if(chip) chip.addEventListener("click", lizenzKarte);
+  var feld = document.getElementById("lizFeld");
+  if(feld) feld.addEventListener("click", function(e){
+    if(e.target === feld) feld.classList.remove("auf");
+  });
+})();
+
 undoHolen();
+lizenzHolen();
 
 var demoGesichertBei = -1;
 function demoOffen(){
