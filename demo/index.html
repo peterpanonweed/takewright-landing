@@ -3973,7 +3973,23 @@ function demoVoll(c){
   return true;
 }
 
+/* Vor dem Laden wird nicht gespeichert.
+   Am 02.09.2026 gingen 18 zugewiesene Rollen und 16 bearbeitete Texte
+   verloren: Der Film liegt im Projektordner und laedt beim Start von selbst,
+   das Vorbelegen des Titels aus dem Dateinamen loest ein Sichern aus — und
+   das lief los, bevor das Holen der Standdatei zurueck war. Gespeichert wurde
+   ein leeres Buch, erst in den Browserspeicher, dann in die Datei. Beide
+   Kopien weg, in derselben Sekunde. Strg+F5 umgeht den Zwischenspeicher und
+   macht dieses Rennen wahrscheinlich.
+   Deshalb: Solange der Startvorgang laeuft, wird gar nichts geschrieben. */
+var standBereit=false;
+function standBereitMelden(){ standBereit=true; }
+/* Falls ein Ladeweg still scheitert, darf die App nicht fuer immer stumm
+   bleiben — nach zwanzig Sekunden gilt der Start als beendet. */
+setTimeout(standBereitMelden, 20000);
+
 function sichern(){
+  if(!standBereit) return;
   var inhalt=standInhalt();
   try{
     if(letzterInhalt===null) letzterInhalt=inhaltAus(localStorage.getItem(SPEICHER));
@@ -4306,6 +4322,7 @@ var MIT_SERVER = false;
         trRender();
         toast(wieder ? "Stand wiederhergestellt — "+cues.length+" Zeilen"
                      : "Transkript geladen — "+cues.length+" Zeilen");
+        standBereitMelden();
         dateiSichern();                        /* Lampe gleich auf den richtigen Stand */
         setTimeout(schreibweisenPruefen, 2600);   /* nach der Ladenmeldung */
       })
@@ -4389,7 +4406,7 @@ function standOhneUntertitel(){
       /* Der juengere gewinnt — dieselbe Regel wie sonst auch */
       var nimm = !datei ? hier : !hier ? datei
                : ((Number(hier.stand)||0) >= (Number(datei.stand)||0) ? hier : datei);
-      if(!nimm){ anfangZeigen(); return; }
+      if(!nimm){ standBereitMelden(); anfangZeigen(); return; }
       standAnwenden(nimm);
       if(nimm===datei && text){
         try{ localStorage.setItem(SPEICHER, text); }catch(e){}
@@ -4397,9 +4414,10 @@ function standOhneUntertitel(){
       }
       standAufPlatte = !!datei;
       trRender();
+      standBereitMelden();
       toast("Stand aus dem Projektordner geholt — "+cues.length+" Zeilen");
     })
-    .catch(function(){ anfangZeigen(); });
+    .catch(function(){ standBereitMelden(); anfangZeigen(); });
 }
 
 function anfangZeigen(){
@@ -5425,6 +5443,7 @@ function dateiSichernGebremst(){
 }
 
 function dateiSichern(){
+  if(!standBereit) return;
   if(standLaeuft){ standNochmal=true; return; }
   var text; try{ text=localStorage.getItem(SPEICHER); }catch(e){ text=null; }
   if(!text){ text=standVoll(standInhalt()); }
@@ -5432,6 +5451,17 @@ function dateiSichern(){
   fetch(STAND_WEG, {method:"POST", headers:{"Content-Type":"application/json"}, body:text})
     .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
     .then(function(d){
+      /* Der Server weist einen leeren Stand ab, wenn auf der Platte ein volles
+         Buch liegt. Das muss man sehen — sonst steht "gesichert" da, waehrend
+         in der Datei etwas anderes steht. */
+      if(d && d.ok===false){
+        standAufPlatte=false;
+        standAnzeige("NICHT gesichert — " + (d.grund || "abgewiesen")
+                   + " · die Datei im Projektordner ist unberührt", "warn");
+        toast("Der Server hat den Stand abgewiesen: " + (d.grund || "unbekannt")
+            + ". Die Datei auf der Platte ist unverändert.");
+        return;
+      }
       standAufPlatte=true;
       standAnzeige("gesichert "+uhrzeit()+" · "+(d.zeilen||0)+" Zeilen im Projektordner", "gut");
     })
