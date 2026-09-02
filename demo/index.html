@@ -3746,9 +3746,13 @@ function rolleFestschreiben(feld){
      alle uebrigen Zeilen der alten Figur mitzunehmen. So ist das Verhalten
      vorhersehbar, und ein Tippfehler kostet genau einen Klick mehr. */
   sichern();
-  /* Hier entsteht die Spaltung: eine Zeile umbenannt, der Rest bleibt stehen.
-     Merken, damit die Rollenpruefung spaeter sagen kann, was offen blieb. */
-  umbenennungMerken(alt, neu, "einzeln");
+  /* Hier wird NICHT protokolliert. Ein neuer Take erbt den Rollennamen des
+     vorigen; wechselt der Sprecher, wird er ueberschrieben — das ist die
+     haeufigste Handbewegung im Programm und keine Umbenennung. Sie mitzu-
+     schreiben hat das Logbuch mit Unsinn gefuellt: Am 02.09.2026 standen dort
+     vier "Umbenennungen", von denen zwei Namen je zwei Nachfolger hatten.
+     Ins Logbuch kommt nur, was der Knopf unten ausloest — "alle weiteren
+     Zeilen auch", also eine bewusste Entscheidung ueber die ganze Figur. */
   toastMitKnopf("Nur diese Zeile: „"+alt+"“ → „"+neu+"“",
                 "Alle "+andere+" weiteren „"+alt+"“-Zeilen auch",
                 function(){ rollenZusammenlegen(alt, neu); });
@@ -6906,14 +6910,9 @@ function rollenKetten(namen){
      Figur HEUTE Zeilen hat. Ginge man vom Ende der Umbenennungskette aus,
      verlore eine Figur ihre Geschichte, sobald der letzte Name (noch) keine
      Zeile traegt — und gerade dann will man sie sehen. */
-  /* In die Kette kommt nur, was der Mensch bewusst getan hat: "in allen Zeilen
-     umbenennen". Eine einzelne Zeile anders zu beschriften ist meistens kein
-     Namenswechsel, sondern eine Tippkorrektur — am 02.09.2026 standen deshalb
-     vier angebliche Umbenennungen im Buch, von denen zwei Namen je ZWEI
-     Nachfolger hatten. Das kann nicht sein, und was nicht sein kann, gehoert
-     nicht in eine Uebersicht.
-
-     Zusaetzlich die Eindeutigkeitsprobe: Hat ein Name mehrere Nachfolger oder
+  /* Aufgezeichnet wird nur noch das bewusste Umbenennen ueber alle Zeilen;
+     aeltere Staende koennen aber noch Eintraege aus der Zeit tragen, in der
+     jede korrigierte Zeile mitgeschrieben wurde. Deshalb bleibt die Probe: Hat ein Name mehrere Nachfolger oder
      ein Nachfolger mehrere Vorgaenger, wird die ganze Verzweigung verworfen.
      Lieber keine Geschichte als eine erfundene. */
   var nachfolger={}, vorgaenger={};
