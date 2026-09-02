@@ -5535,6 +5535,30 @@ function standAusDateiHolen(){
          wird nie stillschweigend uebernommen, sondern nur nach Rueckfrage. */
       var neuer = (Number(datei.stand)||0) > (Number(hier.stand)||0);
       var aDatei = arbeitZaehlen(datei), aHier = arbeitZaehlen(hier);
+
+      /* Die Uhrzeit allein darf nicht entscheiden — nicht in DIESE Richtung.
+         Am 02.09.2026 stand im Browserspeicher ein leeres Buch mit einem
+         juengeren Zeitstempel als die Datei, weil ein Fehlspeichern es dort
+         hineingeschrieben hatte. Die Datei mit 18 Rollen und 16 bearbeiteten
+         Texten galt damit als "aelter" und wurde verworfen — dreimal
+         hintereinander, jedes Mal nach einer Wiederherstellung.
+
+         Ein leerer Browserspeicher hat nichts zu verlieren: Steht dort keine
+         Arbeit und in der Datei welche, gewinnt die Datei, egal wie alt sie
+         ist. Und wo die Datei MEHR Arbeit traegt, wird gefragt statt still
+         verworfen. Eine Uhrzeit ist ein schwaches Argument gegen Arbeit. */
+      if(aHier === 0 && aDatei > 0) return uebernehmen(text, datei, true);
+      if(!neuer && aDatei > aHier){
+        var wannA = datei.stand ? new Date(datei.stand).toLocaleString("de-DE") : "unbekannt";
+        var UM2=String.fromCharCode(10);
+        if(window.confirm(
+             "Im Projektordner liegt ein Stand mit MEHR Arbeit als im Browser."+UM2+UM2
+           + "Datei ("+wannA+"):"+UM2+"   "+standKurz(datei)+UM2+UM2
+           + "Browser:"+UM2+"   "+standKurz(hier)+UM2+UM2
+           + "Den Stand aus dem Projektordner übernehmen?"))
+          return uebernehmen(text, datei, false);
+        return false;
+      }
       if(!neuer) return false;
       if(aDatei >= aHier) return uebernehmen(text, datei, true);
 
