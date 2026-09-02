@@ -191,6 +191,12 @@ header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
 
 /* Rollenprüfung. Die Blöcke stehen untereinander, jeder nennt eine Sorte
    Problem und bietet gleich die Handlung an — Lesen und Beheben ohne Umweg. */
+.fpsecho{font-family:var(--font-mono);font-size:10px;color:var(--film-dim);
+  max-width:230px;line-height:1.35;align-self:center}
+.fpsecho.gut{color:var(--film-accent)}
+.fpsecho.warn{color:var(--warm)}
+.fpsecho s{text-decoration:line-through;opacity:.8}
+.fpsecho em{font-style:normal;font-weight:600}
 .rpblock{border-top:1px solid var(--rule-soft);padding:9px 0}
 .rpblock:first-child{border-top:0;padding-top:0}
 .rpblock>b{display:block;font-size:11.5px;margin-bottom:5px;color:var(--ink)}
@@ -1075,7 +1081,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
             <option value="59.94df">59,94 DF</option>
             <option value="60">60</option>
           </select>
-        </label>
+                </label>
+        <button class="t" id="fpsPruef"
+          title="Am laufenden Bild nachmessen, mit welcher Bildrate der Film wirklich läuft">Bildrate prüfen</button>
+        <span class="fpsecho" id="fpsEcho"></span>
+        <label class="f" style="display:none"></label>
       </div>
 
       <div class="takeleiste">
@@ -1717,7 +1727,7 @@ function bildrateUrteilen(){
                   sel.value=u.norm;
                   sel.dispatchEvent(new Event("change"));
                   measrow.innerHTML='Bildrate auf <em>'+soll+'</em> gestellt';
-                });
+                }, true);
 }
 
 /* ---------- Bildrate am Bild messen ----------
@@ -1725,8 +1735,28 @@ function bildrateUrteilen(){
    eingestellte Bildrate liefert darum trotzdem richtige Stunden, Minuten und
    Sekunden — nur das Bildfeld ist daneben. Aus dem Abgleich allein ist das
    grundsaetzlich nicht zu sehen. Die Bildrate muss aus dem Film selbst kommen. */
-var measrow=document.getElementById("measrow");
+/* Das Messergebnis gehoert an zwei Stellen: in den Abgleich-Kasten, wo es
+   sachlich hingehoert, und neben die Bildraten-Auswahl, wo man beim Arbeiten
+   hinschaut. Es stand bisher nur im Kasten — und der ist zugeklappt.
+
+   Statt jede Schreibstelle anzufassen, steht hier ein Stellvertreter: Er
+   reicht durch und spiegelt. Die uebrigen zwanzig Zeilen bleiben, wie sie
+   sind, und koennen dabei auch nichts kaputtgehen. */
+var measrowEl=document.getElementById("measrow");
+var measrow={
+  set innerHTML(h){ measrowEl.innerHTML=h; fpsEchoSetzen(h); },
+  get innerHTML(){ return measrowEl.innerHTML; },
+  set textContent(t){ measrowEl.textContent=t; fpsEchoSetzen(t); },
+  get textContent(){ return measrowEl.textContent; }
+};
+function fpsEchoSetzen(html){
+  var e=document.getElementById("fpsEcho"); if(!e) return;
+  e.innerHTML=html;
+  e.className="fpsecho" + (/<s>/.test(html) ? " warn"
+                        : (/gemessen|gestellt/.test(html) ? " gut" : ""));
+}
 document.getElementById("measure").addEventListener("click", measureFps);
+document.getElementById("fpsPruef").addEventListener("click", measureFps);
 
 function measureFps(){
   if(!haveFile()){ toast("Erst eine Filmdatei laden"); return; }
@@ -6036,7 +6066,7 @@ function toast(msg){
 }
 /* Meldung mit einem Knopf fuer die andere Deutung — bleibt laenger stehen,
    verschwindet von allein, kostet nichts, wenn man sie ignoriert. */
-function toastMitKnopf(msg, knopf, fn){
+function toastMitKnopf(msg, knopf, fn, bleiben){
   /* Eigenes Element: eine gewoehnliche Meldung danach darf diese hier nicht
      ueberschreiben. Sie bleibt, bis man den Knopf drueckt, sie schliesst —
      oder eine halbe Minute vergeht. */
@@ -6050,7 +6080,11 @@ function toastMitKnopf(msg, knopf, fn){
   x.addEventListener("click", frageSchliessen);
   f.appendChild(x);
   f.classList.add("on");
-  clearTimeout(frageT); frageT=setTimeout(frageSchliessen, 30000);
+  clearTimeout(frageT);
+  /* Manche Fragen duerfen nicht verfallen. Eine falsche Bildrate macht jede
+     Bildzahl im Buch falsch; wer in dem Moment auf den Film schaut, hat die
+     Meldung nach dreissig Sekunden verpasst und merkt es erst bei der Abnahme. */
+  if(!bleiben) frageT=setTimeout(frageSchliessen, 30000);
 }
 var frageT=0;
 function frageSchliessen(){ document.getElementById("frage").classList.remove("on"); clearTimeout(frageT); }
