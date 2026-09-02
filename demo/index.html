@@ -3748,7 +3748,7 @@ function rolleFestschreiben(feld){
   sichern();
   /* Hier entsteht die Spaltung: eine Zeile umbenannt, der Rest bleibt stehen.
      Merken, damit die Rollenpruefung spaeter sagen kann, was offen blieb. */
-  umbenennungMerken(alt, neu);
+  umbenennungMerken(alt, neu, "einzeln");
   toastMitKnopf("Nur diese Zeile: „"+alt+"“ → „"+neu+"“",
                 "Alle "+andere+" weiteren „"+alt+"“-Zeilen auch",
                 function(){ rollenZusammenlegen(alt, neu); });
@@ -3768,7 +3768,7 @@ function rollenZusammenlegen(alt, neu){
   trRender();
   trList.scrollTop=blick;
   sichern();
-  umbenennungMerken(alt, neu);
+  umbenennungMerken(alt, neu, "alle");
   toast("„"+alt+"“ in "+n+" Zeilen zu „"+neu+"“ geändert");
 }
 
@@ -6739,13 +6739,17 @@ function fluchten(s){
 
 var umbenennungen = [];      /* [{von, zu}] — der Verlauf, nicht der Zustand */
 
-function umbenennungMerken(von, zu){
+function umbenennungMerken(von, zu, art){
   von=(von||"").trim(); zu=(zu||"").trim();
   if(!von || !zu || von===zu) return;
   for(var i=0;i<umbenennungen.length;i++){
-    if(umbenennungen[i].von===von && umbenennungen[i].zu===zu) return;
+    if(umbenennungen[i].von===von && umbenennungen[i].zu===zu){
+      /* Aus einer Vermutung wird eine Gewissheit, sobald sie bestaetigt ist */
+      if(art==="alle") umbenennungen[i].art="alle";
+      return;
+    }
   }
-  umbenennungen.push({von:von, zu:zu});
+  umbenennungen.push({von:von, zu:zu, art:art||"einzeln"});
   if(umbenennungen.length > 80) umbenennungen.shift();
 }
 
@@ -6902,8 +6906,29 @@ function rollenKetten(namen){
      Figur HEUTE Zeilen hat. Ginge man vom Ende der Umbenennungskette aus,
      verlore eine Figur ihre Geschichte, sobald der letzte Name (noch) keine
      Zeile traegt — und gerade dann will man sie sehen. */
+  /* In die Kette kommt nur, was der Mensch bewusst getan hat: "in allen Zeilen
+     umbenennen". Eine einzelne Zeile anders zu beschriften ist meistens kein
+     Namenswechsel, sondern eine Tippkorrektur — am 02.09.2026 standen deshalb
+     vier angebliche Umbenennungen im Buch, von denen zwei Namen je ZWEI
+     Nachfolger hatten. Das kann nicht sein, und was nicht sein kann, gehoert
+     nicht in eine Uebersicht.
+
+     Zusaetzlich die Eindeutigkeitsprobe: Hat ein Name mehrere Nachfolger oder
+     ein Nachfolger mehrere Vorgaenger, wird die ganze Verzweigung verworfen.
+     Lieber keine Geschichte als eine erfundene. */
+  var nachfolger={}, vorgaenger={};
+  umbenennungen.forEach(function(u){
+    if(u.art!=="alle") return;
+    (nachfolger[u.von]=nachfolger[u.von]||[]).push(u.zu);
+    (vorgaenger[u.zu]=vorgaenger[u.zu]||[]).push(u.von);
+  });
   var vor={};
-  umbenennungen.forEach(function(u){ vor[u.zu]=u.von; });
+  Object.keys(vorgaenger).forEach(function(zu){
+    var v=vorgaenger[zu];
+    if(v.length!==1) return;                 /* mehrere Vorgaenger: unklar */
+    if((nachfolger[v[0]]||[]).length!==1) return;  /* mehrere Nachfolger: unklar */
+    vor[zu]=v[0];
+  });
   var ketten={};
   namen.forEach(function(r){
     var kette=[r], x=r, schutz=0;
