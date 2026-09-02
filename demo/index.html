@@ -197,6 +197,34 @@ header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
 .fpsecho.warn{color:var(--warm)}
 .fpsecho s{text-decoration:line-through;opacity:.8}
 .fpsecho em{font-style:normal;font-weight:600}
+
+/* Rollenübersicht. Eine Zeile je Figur: Farbe, Namenskette, Zeilenzahl und
+   ein Balken, der zeigt, wo im Film sie überhaupt vorkommt. Die Kette liest
+   sich von links nach rechts wie ein Verlauf — alter Name, heutiger Name. */
+.rureihe{display:grid;grid-template-columns:10px minmax(120px,1fr) 42px 1fr 108px;
+  align-items:center;gap:9px;padding:3px 0;border-bottom:1px solid var(--rule-soft)}
+.rureihe:last-child{border-bottom:0}
+.rupunkt{width:9px;height:9px;border-radius:50%;display:inline-block}
+.runame{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0}
+.rukn{font-family:var(--font-mono);font-size:11px;border-radius:2px;padding:1px 6px;
+  white-space:nowrap}
+.rukn.jetzt{color:var(--ink);background:var(--surface-2)}
+.rukn.alt{color:var(--ink-3);background:none;text-decoration:line-through;
+  padding-left:0;padding-right:0}
+.rukn.offen{color:var(--warm);background:var(--warm-soft)}
+.rukn i{font-style:normal;font-size:9px;margin-left:4px;opacity:.85}
+.rupf{color:var(--ink-3);font-size:10px}
+.ruzahl{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-3);text-align:right}
+.rubar{position:relative;height:7px;border-radius:3px;background:var(--surface-2);
+  display:block;min-width:40px}
+.rubalken{position:absolute;top:0;height:7px;border-radius:3px;background:var(--accent);
+  opacity:.75}
+.ruzeit{font-family:var(--font-mono);font-size:9.5px;color:var(--ink-3);
+  white-space:nowrap;text-align:right}
+@media (max-width:620px){
+  .rureihe{grid-template-columns:10px 1fr 40px;row-gap:2px}
+  .rubar,.ruzeit{display:none}
+}
 .rpblock{border-top:1px solid var(--rule-soft);padding:9px 0}
 .rpblock:first-child{border-top:0;padding-top:0}
 .rpblock>b{display:block;font-size:11.5px;margin-bottom:5px;color:var(--ink)}
@@ -1307,6 +1335,23 @@ input[type=range]{width:100%;accent-color:var(--accent)}
             <button class="mini" id="prAlle" style="display:none">Alle übernehmen</button>
           </div>
           <div class="rows" id="prRows"><div class="empty-note">— noch nicht durchsucht —</div></div>
+        </div>
+      </details>
+
+      <details class="panel klapp kachelfeld" id="feldUebersicht">
+        <summary class="phead">
+          <h3>Rollenübersicht</h3>
+          <span class="cnt" id="ruCnt"></span>
+        </summary>
+        <div class="pbody">
+          <p class="hint">Alle Figuren auf einen Blick: wie viel sie reden, wo im
+            Film sie vorkommen — und unter welchen Namen sie unterwegs liefen.
+            Steht auf einem alten Namen noch eine Zeile, ist er orange.</p>
+          <div class="btnrow">
+            <span class="sp" style="flex:1"></span>
+            <button class="mini" id="ruStart">Neu aufbauen</button>
+          </div>
+          <div class="rows" id="ruRows"><div class="empty-note">— aufklappen —</div></div>
         </div>
       </details>
 
@@ -6787,6 +6832,99 @@ function schreibweiseVereinheitlichen(form){
   toast(paare.length+" Bezeichnungen vereinheitlicht, "+n+" Zeilen berührt");
   rollenPruefen();
 }
+
+
+/* ------------------------------------------------------- Rollenübersicht ---
+   Wer sind eigentlich meine Figuren, wie viel reden sie, wann kommen sie vor,
+   und unter welchen Namen liefen sie unterwegs?
+
+   Der Verlauf steckt in `umbenennungen` als Paare {von, zu}. Aneinandergereiht
+   ergeben sie Ketten — der erste Name links, der heutige rechts. Steht auf
+   einem alten Namen noch eine Zeile, ist die Kette nicht zu Ende gegangen;
+   genau das faellt hier auf, ohne dass man danach suchen muss. */
+
+function rollenKetten(namen){
+  /* Rueckwaerts, nicht vorwaerts: Ausgangspunkt ist der Name, unter dem die
+     Figur HEUTE Zeilen hat. Ginge man vom Ende der Umbenennungskette aus,
+     verlore eine Figur ihre Geschichte, sobald der letzte Name (noch) keine
+     Zeile traegt — und gerade dann will man sie sehen. */
+  var vor={};
+  umbenennungen.forEach(function(u){ vor[u.zu]=u.von; });
+  var ketten={};
+  namen.forEach(function(r){
+    var kette=[r], x=r, schutz=0;
+    while(vor[x] && schutz++ < 40 && kette.indexOf(vor[x])<0){ x=vor[x]; kette.unshift(x); }
+    ketten[r]=kette;
+  });
+  return ketten;
+}
+
+function rollenUebersicht(){
+  var z=rollenZaehlen();
+  var zeit={}, anfang=null, ende=0;
+  for(var k=0;k<cues.length;k++){
+    var c=cues[k]; if(c.geloescht) continue;
+    var t=(c.tcSet!==null&&c.tcSet!==undefined)?c.tcSet:c.a;
+    if(typeof t!=="number") continue;
+    if(anfang===null || t<anfang) anfang=t;
+    if(t>ende) ende=t;
+    var r=(c.rolle||"").trim(); if(!r) continue;
+    if(!zeit[r]) zeit[r]=[t,t];
+    else { if(t<zeit[r][0]) zeit[r][0]=t; if(t>zeit[r][1]) zeit[r][1]=t; }
+  }
+  if(anfang===null) anfang=0;
+  var spanne=Math.max(1, ende-anfang);
+
+  var namen=Object.keys(z).filter(function(r){ return r; });
+  if(!namen.length){
+    document.getElementById("ruRows").innerHTML =
+      '<div class="empty-note">&mdash; noch keine Rollen im Buch &mdash;</div>';
+    document.getElementById("ruCnt").textContent="";
+    return;
+  }
+  namen.sort(function(a,b){ return z[b]-z[a]; });
+  var ketten=rollenKetten(namen);
+
+  var reihen = namen.map(function(r){
+    var kette = ketten[r] || [r];
+    var glieder = kette.map(function(n, i){
+      var letzte = (i === kette.length-1);
+      var rest = z[n]||0;
+      var kl = letzte ? "rukn jetzt" : (rest ? "rukn offen" : "rukn alt");
+      return (i ? '<span class="rupf">&rarr;</span>' : "")
+           + '<span class="'+kl+'">'+fluchten(n)
+           + (!letzte && rest ? '<i>noch '+rest+'</i>' : "") + '</span>';
+    }).join("");
+
+    var t = zeit[r], balken = "";
+    if(t){
+      var l = (t[0]-anfang)/spanne*100, w = Math.max(1.2, (t[1]-t[0])/spanne*100);
+      balken = '<span class="rubar"><span class="rubalken" style="left:'+l.toFixed(2)
+             + '%;width:'+w.toFixed(2)+'%"></span></span>'
+             + '<span class="ruzeit">'+uhrzeit(t[0])+' &ndash; '+uhrzeit(t[1])+'</span>';
+    } else {
+      balken = '<span class="rubar"></span><span class="ruzeit">ohne Zeit</span>';
+    }
+
+    var ton = rollenTon(r);
+    return '<div class="rureihe">'
+      + '<span class="rupunkt" style="background:hsl('+tonHue(ton)+' '+tonSat(ton)+'% '
+      + tonLicht(ton)+'%)"></span>'
+      + '<span class="runame">'+glieder+'</span>'
+      + '<span class="ruzahl">'+z[r]+'</span>'
+      + balken + '</div>';
+  }).join("");
+
+  document.getElementById("ruRows").innerHTML = reihen;
+  var mitKette = namen.filter(function(r){ return (ketten[r]||[r]).length>1; }).length;
+  document.getElementById("ruCnt").textContent =
+    namen.length + " Rollen" + (mitKette ? ", " + mitKette + " umbenannt" : "");
+}
+
+document.getElementById("ruStart").addEventListener("click", rollenUebersicht);
+document.getElementById("feldUebersicht").addEventListener("toggle", function(){
+  if(this.open) rollenUebersicht();
+});
 
 document.getElementById("rpStart").addEventListener("click", rollenPruefen);
 document.getElementById("rpRows").addEventListener("click", function(e){
