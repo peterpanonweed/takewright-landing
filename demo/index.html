@@ -365,8 +365,8 @@ body.zieht iframe,body.zieht video{pointer-events:none}
 /* Wird das Buch schmal gezogen, wandert der Text unter Zeit und Rolle —
    sonst bleibt bei 24px Schrift fuer ihn nur noch ein Buchstabe je Zeile. */
 @container (max-width:640px){
-  .trrow{grid-template-columns:6.7em minmax(0,1fr) 1.1em 1.1em;grid-template-areas:"zeit rolle frag weg" "text text text text";row-gap:.15em}
-  .trrow .t{grid-area:zeit} .trrow .rl{grid-area:rolle} .trrow .frag{grid-area:frag} .trrow .weg{grid-area:weg} .trrow .x{grid-area:text}
+  .trrow{grid-template-columns:6.7em minmax(0,1fr) 1.1em 1.1em 1.2em;grid-template-areas:"zeit rolle frag grenz weg" "text text text text text";row-gap:.15em}
+  .trrow .t{grid-area:zeit} .trrow .rl{grid-area:rolle} .trrow .frag{grid-area:frag} .trrow .grenzk{grid-area:grenz} .trrow .weg{grid-area:weg} .trrow .x{grid-area:text}
 }
 @media (max-width:1180px){.app > aside{position:static}}
 
@@ -530,7 +530,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 
 /* Alles in der Liste haengt an dieser einen Groesse und waechst mit ihr */
 .trlist{font-size:24px;max-height:calc(100vh - 150px);min-height:360px;overflow-y:auto;overscroll-behavior:contain}
-.trrow{display:grid;grid-template-columns:6.7em 6.3em minmax(0,1fr) 1.1em 1.1em;gap:.4em;
+.trrow{display:grid;grid-template-columns:6.7em 6.3em minmax(0,1fr) auto auto auto;gap:.4em;
   padding:.32em .6em .32em .75em;border-bottom:1px solid var(--rule-soft);align-items:start;position:relative}
 .trrow > *{min-width:0}                       /* sonst draengt eine Spalte in die naechste */
 
@@ -599,7 +599,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .trrow.hatrolle .rl{color:hsl(var(--rf) var(--rf-s,72%) calc(var(--rf-l) + var(--rf-dl,0%)));font-weight:600}
 
 .trrow.neu{box-shadow:inset 3px 0 0 var(--accent)}
-.trrow .weg{background:none;border:0;color:var(--ink-3);opacity:0;cursor:pointer;font-size:14px;line-height:1;padding:2px 3px;border-radius:2px}
+/* Loeschen kommt oft vor. Das x stand bisher auf opacity:0 und tauchte erst
+   beim Ueberfahren auf — man musste wissen, dass es da ist. Jetzt ist es
+   dauerhaft zu sehen, groesser und kraeftiger, und faerbt sich beim
+   Ueberfahren warnend ein. */
+.trrow .weg{background:none;border:0;color:var(--ink-3);opacity:.4;cursor:pointer;
+  font-size:18px;font-weight:600;line-height:1;padding:1px 3px;border-radius:2px}
+.trrow:hover .weg{opacity:.75}
+.trrow .weg:hover{opacity:1;color:var(--bad);background:var(--bad-soft)}
 .trrow .frag{background:none;border:0;color:var(--ink-3);opacity:0;cursor:pointer;font-size:13px;line-height:1;padding:2px 3px;border-radius:2px}
 .trrow:hover .frag{opacity:.55}
 .trrow .frag:hover{opacity:1;color:var(--warm)}
@@ -608,8 +615,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .trrow.frage{box-shadow:inset -3px 0 0 var(--warm)}
 .trrow.frage.hatrolle{box-shadow:inset 3px 0 0 hsl(var(--rf) calc(var(--rf-s,72%) - 10%) calc(46% + var(--rf-dl,0%))),
   inset -3px 0 0 var(--warm)}
-.trrow:hover .weg{opacity:.55}
-.trrow .weg:hover{opacity:1;color:var(--bad)}
+/* (Die frueheren Hover-Regeln fuer .weg stehen jetzt weiter oben, zusammen
+   mit der Grundfarbe — zwei Stellen fuer dasselbe waren eine zu viel.) */
 
 .grossertake{width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;
   background:var(--accent);color:var(--ground);border:0;border-radius:3px;cursor:pointer;
@@ -755,7 +762,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .farbwahl .auto.an{border-color:var(--accent);color:var(--accent)}
 .trrow .x{font-size:1em;line-height:1.35;color:var(--ink);white-space:pre-wrap}
 .trrow .x[dir="rtl"]{text-align:right;font-size:1.1em}
-.trrow .weg{font-size:.62em}
+/* Loeschen ist eine haeufige Handlung — das Zeichen darf nicht das kleinste
+   in der Zeile sein. Stand hier bis zum 08.09.2026 auf .62em. */
+.trrow .weg{font-size:1.05em;font-weight:600}
 
 .trrow.on{background:var(--accent-soft)}
 .trrow.on .tcv{color:var(--accent)}
