@@ -3718,6 +3718,46 @@ function schreibweiseAngleichen(name, ausserZeile){
   return name.trim();
 }
 
+/* Die Zahl der Takes je Rolle wurde bisher nur beim vollen Neuaufbau der
+   Liste gezaehlt. Beim Beschriften blieb sie stehen — und mit ihr die
+   Einstufung als Mengenrolle. Wuchs eine Rolle ueber die Grenze, faerbte
+   sich nur die Zeile um, an der man gerade stand; die uebrigen blieben grau,
+   bis die Liste zufaellig neu aufgebaut wurde. Am 08.09.2026 stand deshalb
+   dieselbe Rolle dreimal grau und einmal farbig untereinander. */
+function rollenZahlFrisch(){
+  var w={};
+  for(var k=0;k<cues.length;k++){
+    if(cues[k].geloescht) continue;
+    var r=(cues[k].rolle||"").trim();
+    if(r) w[r]=(w[r]||0)+1;
+  }
+  rollenZahl=w;
+}
+
+function rollenNeuFaerben(namen){
+  var zeilen=trList.querySelectorAll("[data-tr]");
+  for(var k=0;k<zeilen.length;k++){
+    var i=+zeilen[k].getAttribute("data-tr"), c=cues[i];
+    if(!c) continue;
+    var r=(c.rolle||"").trim();
+    if(r && namen.indexOf(r)>=0) zeileEinfaerben(zeilen[k], r);
+  }
+}
+
+/* Nur anfassen, was sich wirklich aendert: Sonst liefe bei jedem Tastendruck
+   ein Durchgang ueber alle sichtbaren Zeilen. */
+function mengenStandAendert(namen, tun){
+  var vorher={};
+  namen.forEach(function(n){ if(n) vorher[n]=istMengenrolle(n); });
+  tun();
+  rollenZahlFrisch();
+  var betroffen=[];
+  namen.forEach(function(n){
+    if(n && vorher[n]!==istMengenrolle(n)) betroffen.push(n);
+  });
+  if(betroffen.length) rollenNeuFaerben(betroffen);
+}
+
 function rolleFestschreiben(feld){
   var zeile=feld.closest("[data-tr]"); if(!zeile) return;
   var i=+zeile.getAttribute("data-tr"), c=cues[i];
@@ -3729,7 +3769,7 @@ function rolleFestschreiben(feld){
     zeileEinfaerben(zeile, neu);
   }
   rolleVorher=null;
-  c.rolle=neu;
+  mengenStandAendert([alt, neu], function(){ c.rolle=neu; });
   if(!alt || !neu || alt===neu){ sichernGebremst(); return; }
 
   var andere=0, schonVergeben=false;
