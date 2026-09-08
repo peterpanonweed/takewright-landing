@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Takewrite 1.2 · 2026-09-02 -->
+<!-- Takewrite 1.3 · 2026-09-08 -->
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -201,6 +201,19 @@ header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
 /* Rollenübersicht. Eine Zeile je Figur: Farbe, Namenskette, Zeilenzahl und
    ein Balken, der zeigt, wo im Film sie überhaupt vorkommt. Die Kette liest
    sich von links nach rechts wie ein Verlauf — alter Name, heutiger Name. */
+/* Die Exportgrenze. Sie muss ins Auge fallen — eine vergessene Grenze
+   lieferte sonst beim naechsten Mal stillschweigend ein zu kurzes Buch. */
+.grenzk{opacity:.22;background:none;border:0;cursor:pointer;font-size:13px;
+  line-height:1;padding:0 3px;color:var(--ink-3)}
+.trrow:hover .grenzk{opacity:.65}
+.grenzk:hover{opacity:1;color:var(--warm)}
+.trrow{position:relative}
+.trrow.grenzzeile{box-shadow:inset 0 -2px 0 0 var(--warm)}
+.trrow.grenzzeile .grenzk{opacity:1;color:var(--warm)}
+.trrow.grenzzeile::after{content:"Export endet hier";position:absolute;right:8px;
+  bottom:-9px;z-index:3;font-family:var(--font-mono);font-size:8.5px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--warm);
+  background:var(--ground);padding:0 5px}
 .rureihe{display:grid;grid-template-columns:10px minmax(120px,1fr) 42px 1fr 108px;
   align-items:center;gap:9px;padding:3px 0;border-bottom:1px solid var(--rule-soft)}
 .rureihe:last-child{border-bottom:0}
@@ -994,7 +1007,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <div class="marke">
     <span class="wortmarke" role="img" aria-label="Takewrite"></span>
     <span class="claim">Synchronbuch · einfach · schreiben</span>
-    <span class="ver" style="color:var(--warm);border-color:var(--warm)" title="Demo-Fassung — auf 75 Takes begrenzt">1.2 · DEMO — 75 Takes</span>
+    <span class="ver" style="color:var(--warm);border-color:var(--warm)" title="Demo-Fassung — auf 75 Takes begrenzt">1.3 · DEMO — 75 Takes</span>
     <span class="projekt" id="projektName" style="display:none"></span>
     <span class="demohinweis">Zum Ausprobieren &mdash; hier sichert nichts von allein. Der gr&uuml;ne Knopf legt deinen Stand als Datei ab, <b>Stand einlesen</b> holt ihn zur&uuml;ck.</span>
     <button class="lizchip" id="lizChip" style="display:none" type="button"></button>
@@ -2157,10 +2170,12 @@ function trRender(){
          +   'placeholder="Rolle" value="'+esc(c.rolle||"")+'">'
          + '<div class="x" contenteditable="true" spellcheck="false" data-feld="text"'+(rtl?' dir="rtl"':'')+'>'+nurKursiv(c.text)+'</div>'
          + '<button class="frag" data-frag title="Für die Wiedervorlage markieren — hier ist noch etwas unklar">&#9873;</button>'
+         + '<button class="grenzk" data-grenze title="Export endet hier — nochmal klicken hebt es auf">&#10515;</button>'
          + '<button class="weg" data-weg title="Zeile ausblenden">×</button>'
          + '</div>';
   }).join("");
   trAktiv=-1; trSpricht=false; scharf=-1;
+  grenzeZeigen();
   rollenListeBauen();
   trFortschritt();
   sucheAnwenden();
@@ -3330,6 +3345,69 @@ function trFortschritt(){
 
 function zeileEl(i){ return trList.querySelector('[data-tr="'+i+'"]'); }
 
+/* ------------------------------------------------------ Exportgrenze ---
+   Der Export endet ab Werk bei der letzten bearbeiteten Zeile. Das ist meist
+   richtig, aber nicht immer: Wer weiter unten schon etwas angefasst hat, zieht
+   damit einen halbfertigen Rest mit. Und wer eine Strecke abgeben will, will
+   sie genau abgrenzen — nicht ungefaehr.
+
+   Deshalb eine Marke, die man selbst setzt. Sie steht sichtbar in der Liste,
+   nicht im Verborgenen: Eine Grenze, die man vergisst, wuerde beim naechsten
+   Export stillschweigend ein zu kurzes Buch liefern. */
+
+var exportGrenzeNr = null;
+
+function grenzeIndex(){
+  if(exportGrenzeNr===null) return -1;
+  for(var i=0;i<cues.length;i++){
+    if(!cues[i].geloescht && cues[i].nr===exportGrenzeNr) return i;
+  }
+  return -1;
+}
+
+function grenzeSetzen(i){
+  var c=cues[i]; if(!c) return;
+  if(exportGrenzeNr===c.nr){ exportGrenzeNr=null; toast("Exportgrenze aufgehoben"); }
+  else {
+    exportGrenzeNr=c.nr;
+    var n=0;
+    for(var k=0;k<=i;k++) if(!cues[k].geloescht) n++;
+    toast("Export endet hier — " + n + (n===1?" Zeile":" Zeilen"));
+  }
+  grenzeZeigen();
+  sichern();
+}
+
+function grenzeZeigen(){
+  var alle=trList.querySelectorAll(".trrow");
+  for(var k=0;k<alle.length;k++) alle[k].classList.remove("grenzzeile");
+  var i=grenzeIndex();
+  if(i>=0){
+    var z=zeileEl(i);
+    if(z) z.classList.add("grenzzeile");
+  }
+  var kn=document.getElementById("expMenu");
+  if(kn){
+    kn.textContent = (i>=0 ? "Export ▾ ⤓" : "Export ▾");
+    kn.title = i>=0
+      ? "Der Export endet an der gesetzten Grenze. Nochmal auf ⤓ in der Zeile klicken hebt sie auf."
+      : "Das ganze Buch als durchgehende Tabelle";
+  }
+}
+
+/* Wie weit reicht die Ausgabe? Eine Stelle fuer alle Ausgabewege. */
+function exportBis(){
+  var alles=document.getElementById("expAlles");
+  if(alles && alles.checked) return zeilen;
+  var g=grenzeIndex();
+  if(g>=0){
+    var raus=[];
+    for(var k=0;k<cues.length && k<=g;k++) if(!cues[k].geloescht) raus.push(cues[k]);
+    return raus;
+  }
+  return null;                       /* keine Grenze: der Aufrufer entscheidet */
+}
+
 /* Die Arbeitszeile bleibt im oberen Drittel stehen, statt nach unten
    wegzuwandern — sonst entfernt sie sich mit jeder Zeile weiter vom Bild. */
 /* Bringt eine Zeile auf eine bestimmte Bildschirmhoehe — gebraucht fuer den
@@ -3589,6 +3667,11 @@ trList.addEventListener("click", function(e){
   if(e.target.closest("[data-go]")){             /* Abspielknopf: ab hier laufen lassen */
     zeileAbfeuern(i);
     e.stopPropagation(); return;
+  }
+  if(e.target.hasAttribute("data-grenze")){      /* Exportgrenze setzen/aufheben */
+    var zg=e.target.closest("[data-tr]");
+    if(zg){ grenzeSetzen(+zg.getAttribute("data-tr")); }
+    return;
   }
   if(e.target.hasAttribute("data-frag")){        /* Wiedervorlage umschalten */
     cues[i].frage=!cues[i].frage;
@@ -3974,6 +4057,7 @@ function standInhalt(){
     /* Der Verlauf der Umbenennungen. Ohne ihn koennte die Rollenpruefung nach
        einem Projektwechsel nur noch raten. */
     umbenannt: umbenennungen,
+    grenze: exportGrenzeNr,
     kopf: kopfLesen(),
     zeilen: cues.map(function(c){
       return { nr:c.nr, a:+c.a.toFixed(3), b:+c.b.toFixed(3),
@@ -4054,6 +4138,7 @@ function standAnwenden(d){
   rollenAuto = (d.auto && typeof d.auto==="object") ? d.auto : {};
   umbenennungen = Array.isArray(d.umbenannt) ? d.umbenannt.filter(function(u){
     return u && typeof u.von==="string" && typeof u.zu==="string"; }) : [];
+  exportGrenzeNr = (typeof d.grenze==="number") ? d.grenze : null;
   kopfSchreiben(d.kopf);
   cues.length=0;
   (d.zeilen||[]).forEach(function(z){
@@ -4147,6 +4232,7 @@ function standLaden(){
   rollenAuto = (d.auto && typeof d.auto==="object") ? d.auto : {};
   umbenennungen = Array.isArray(d.umbenannt) ? d.umbenannt.filter(function(u){
     return u && typeof u.von==="string" && typeof u.zu==="string"; }) : [];
+  exportGrenzeNr = (typeof d.grenze==="number") ? d.grenze : null;
   kopfSchreiben(d.kopf);
 
   var nachNr={}, eigene=[];
@@ -5244,10 +5330,14 @@ function wordExport(nachRollen){
     var bearbeitet=function(c){
       return (c.rolle||"").trim()!=="" || c.gesetzt || c.neu || c.textGeaendert;
     };
-    var letzte=-1;
-    for(var q=zeilen.length-1;q>=0;q--){ if(bearbeitet(zeilen[q])){ letzte=q; break; } }
-    if(letzte<0){ toast("Noch nichts bearbeitet — nichts zu exportieren"); return; }
-    zeilen=zeilen.slice(0, letzte+1);
+    var vorgabe=exportBis();
+    if(vorgabe){ zeilen=vorgabe; }
+    else {
+      var letzte=-1;
+      for(var q=zeilen.length-1;q>=0;q--){ if(bearbeitet(zeilen[q])){ letzte=q; break; } }
+      if(letzte<0){ toast("Noch nichts bearbeitet — nichts zu exportieren"); return; }
+      zeilen=zeilen.slice(0, letzte+1);
+    }
     var tz=zeitVon(zeilen[zeilen.length-1]);
     bisTC=(bitcAt(tz) || framesToTC(Math.round(tz*p.rate), p)).slice(0,8);
   }
@@ -5666,10 +5756,14 @@ function xlsxAusschnitt(){
     var bearbeitet=function(c){
       return (c.rolle||"").trim()!=="" || c.gesetzt || c.neu || c.textGeaendert;
     };
-    var letzte=-1;
-    for(var q=zeilen.length-1;q>=0;q--){ if(bearbeitet(zeilen[q])){ letzte=q; break; } }
-    if(letzte<0) return null;
-    zeilen=zeilen.slice(0, letzte+1);
+    var vorgabe=exportBis();
+    if(vorgabe){ zeilen=vorgabe; }
+    else {
+      var letzte=-1;
+      for(var q=zeilen.length-1;q>=0;q--){ if(bearbeitet(zeilen[q])){ letzte=q; break; } }
+      if(letzte<0) return null;
+      zeilen=zeilen.slice(0, letzte+1);
+    }
   }
   return zeilen;
 }
@@ -5863,10 +5957,14 @@ function pdfHtml(){
     var bearbeitet=function(c){
       return (c.rolle||"").trim()!=="" || c.gesetzt || c.neu || c.textGeaendert;
     };
-    var letzte=-1;
-    for(var q=zeilen.length-1;q>=0;q--){ if(bearbeitet(zeilen[q])){ letzte=q; break; } }
-    if(letzte<0) return null;
-    zeilen=zeilen.slice(0, letzte+1);
+    var vorgabe=exportBis();
+    if(vorgabe){ zeilen=vorgabe; }
+    else {
+      var letzte=-1;
+      for(var q=zeilen.length-1;q>=0;q--){ if(bearbeitet(zeilen[q])){ letzte=q; break; } }
+      if(letzte<0) return null;
+      zeilen=zeilen.slice(0, letzte+1);
+    }
     var tz=zeitVon(zeilen[zeilen.length-1]);
     bisTC=(bitcAt(tz) || framesToTC(Math.round(tz*p.rate), p)).slice(0,8);
   }
