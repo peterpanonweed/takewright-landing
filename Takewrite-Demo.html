@@ -2042,7 +2042,54 @@ function nurKursiv(html){
       }
     }
   })(d);
-  return d.innerHTML.replace(/<i><\/i>/g,"");
+  return klammernKursiv(d);
+}
+
+/* Alles zwischen [ und ] steht kursiv — egal, wie es hineinkam.
+   Am 15.09.2026 lag eine eingefuegte Liste von Rufen in einer Anmerkungs-
+   klammer: Der Browser hatte sie als Block eingefuegt, sie war dabei aus dem
+   <i> ausgebrochen und stand aufrecht da, mit echten Zeilenumbruechen im Text.
+   Statt jeden Weg zu flicken, auf dem so etwas entstehen kann, gilt jetzt eine
+   Regel fuer das Ergebnis: In eckigen Klammern ist kursiv. Die Klammerzeichen
+   selbst bleiben aufrecht, wie es die Regieleiste immer schon eingesetzt hat.
+   Nur paarige Klammern zaehlen — eine offene "[" beim Tippen macht nicht den
+   ganzen Rest der Zeile kursiv.
+   Nebenbei: Zeilenumbrueche und Tabulatoren werden zu Leerzeichen. Ein Take
+   ist eine Zeile. Doppelte Leerzeichen bleiben stehen; die zeigt die
+   Korrekturlesung an, stillschweigend verschluckt wird nichts. */
+function klammernKursiv(wurzel){
+  var zeichen=[];
+  (function sammle(k, kursiv){
+    for(var i=0;i<k.childNodes.length;i++){
+      var n=k.childNodes[i];
+      if(n.nodeType===3){
+        var t=n.nodeValue.replace(/[\r\n\t]/g," ");
+        for(var j=0;j<t.length;j++) zeichen.push([t.charAt(j), kursiv]);
+      } else if(n.nodeType===1){
+        sammle(n, kursiv || n.tagName.toLowerCase()==="i");
+      }
+    }
+  })(wurzel, false);
+
+  var offen=[];
+  for(var a=0;a<zeichen.length;a++){
+    if(zeichen[a][0]==="[") offen.push(a);
+    else if(zeichen[a][0]==="]" && offen.length){
+      var von=offen.pop();
+      zeichen[von][1]=false; zeichen[a][1]=false;
+      for(var b=von+1;b<a;b++) zeichen[b][1]=true;
+    }
+  }
+
+  var aus="", inI=false;
+  function fl(c){ return c==="&"?"&amp;":c==="<"?"&lt;":c===">"?"&gt;":c; }
+  for(var c=0;c<zeichen.length;c++){
+    if(zeichen[c][1] && !inI){ aus+="<i>"; inI=true; }
+    if(!zeichen[c][1] && inI){ aus+="</i>"; inI=false; }
+    aus+=fl(zeichen[c][0]);
+  }
+  if(inI) aus+="</i>";
+  return aus.replace(/<i><\/i>/g,"");
 }
 /* Fuer die Word-Ausgabe: den Text in Stuecke zerlegen, jedes mit der
    Angabe, ob es kursiv steht. */
@@ -3740,8 +3787,12 @@ function ausgeblendetPruefen(){}
    Rueckgaengig-Stapel des Browsers heil; ein eigenes Einsetzen ueber Bereiche
    wuerde Strg+Z innerhalb des Feldes zerstoeren. */
 trList.addEventListener("paste", function(e){
-  var z=e.target;
-  if(!z.getAttribute || z.getAttribute("data-feld")!=="text") return;
+  /* closest, nicht target: Steht der Cursor in einer Anmerkungsklammer, ist das
+     Ziel das <i> darin. Die alte Pruefung hielt sich dann fuer nicht zustaendig,
+     und der Browser fuegte das volle HTML ein — Schrift, Groesse, Umbrueche. */
+  var z=e.target && e.target.closest ? e.target.closest('[data-feld="text"]')
+        : null;
+  if(!z) return;
   var quelle=e.clipboardData || window.clipboardData;
   if(!quelle) return;
   var text=quelle.getData("text/plain") || "";
@@ -3752,6 +3803,17 @@ trList.addEventListener("paste", function(e){
   if(!text) return;
   try{ document.execCommand("insertText", false, text); }
   catch(err){ z.textContent = z.textContent + text; }
+});
+
+trList.addEventListener("drop", function(e){
+  var z=e.target && e.target.closest ? e.target.closest('[data-feld="text"]') : null;
+  if(!z || !e.dataTransfer) return;
+  if(e.dataTransfer.files && e.dataTransfer.files.length) return;   /* Dateien: anderer Weg */
+  var text=(e.dataTransfer.getData("text/plain")||"").replace(/\s+/g," ").trim();
+  e.preventDefault();
+  if(!text) return;
+  z.focus();
+  try{ document.execCommand("insertText", false, text); }catch(err){}
 });
 
 trList.addEventListener("input", function(e){
@@ -4151,7 +4213,7 @@ function standAnwenden(d){
   kopfSchreiben(d.kopf);
   cues.length=0;
   (d.zeilen||[]).forEach(function(z){
-    cues.push({ nr:(z.nr===undefined?null:z.nr), a:z.a, b:z.b, text:z.t,
+    cues.push({ nr:(z.nr===undefined?null:z.nr), a:z.a, b:z.b, text:nurKursiv(z.t),
                 textGeaendert:!!z.tg, rolle:z.r||"",
                 tcSet:(z.s===undefined?null:z.s),
                 gesetzt:!!z.g, neu:!!z.n, geloescht:!!z.d, frage:!!z.fr });
