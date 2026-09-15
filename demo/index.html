@@ -247,6 +247,11 @@ header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
 .trrow.pruefziel [data-feld="text"]::selection,
 .trrow.pruefziel [data-feld="text"] *::selection{background:var(--warm);color:#fff}
 .pruefzeile.aktiv{background:var(--warm-soft);box-shadow:inset 3px 0 0 var(--warm)}
+.rusort{display:inline-flex;gap:0;margin-right:auto}
+.rusort .mini{border-radius:0}
+.rusort .mini:first-child{border-radius:3px 0 0 3px}
+.rusort .mini:last-child{border-radius:0 3px 3px 0;margin-left:-1px}
+.rusort .mini.an{background:var(--accent);color:var(--surface);border-color:var(--accent)}
 .rpblock{border-top:1px solid var(--rule-soft);padding:9px 0}
 .rpblock:first-child{border-top:0;padding-top:0}
 .rpblock>b{display:block;font-size:11.5px;margin-bottom:5px;color:var(--ink)}
@@ -1380,6 +1385,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
             Steht auf einem alten Namen noch eine Zeile, ist er orange.</p>
           <div class="btnrow">
             <span class="sp" style="flex:1"></span>
+            <span class="rusort" id="ruSort" role="group" aria-label="Sortierung">
+              <button type="button" class="mini" data-rusort="zeilen">nach Zeilen</button>
+              <button type="button" class="mini" data-rusort="alpha">A–Z</button>
+            </span>
             <button class="mini" id="ruStart">Neu aufbauen</button>
           </div>
           <div class="rows" id="ruRows"><div class="empty-note">— aufklappen —</div></div>
@@ -7214,7 +7223,19 @@ function rollenKetten(namen){
   return ketten;
 }
 
+var ruSortierung="zeilen";
+try{ if(localStorage.getItem("takewrite_rusort")==="alpha") ruSortierung="alpha"; }catch(e){}
+
+function ruSortKnoepfe(){
+  [].forEach.call(document.querySelectorAll("#ruSort [data-rusort]"), function(b){
+    var an=b.getAttribute("data-rusort")===ruSortierung;
+    b.classList.toggle("an", an);
+    b.setAttribute("aria-pressed", an ? "true" : "false");
+  });
+}
+
 function rollenUebersicht(){
+  ruSortKnoepfe();
   var z=rollenZaehlen();
   var zeit={}, anfang=null, ende=0;
   for(var k=0;k<cues.length;k++){
@@ -7237,7 +7258,21 @@ function rollenUebersicht(){
     document.getElementById("ruCnt").textContent="";
     return;
   }
-  namen.sort(function(a,b){ return z[b]-z[a]; });
+  /* Zwei Ordnungen. Nach Zeilen: wer redet am meisten. A–Z: wer ist womoeglich
+     doppelt da. Bei einem Film mit vielen Kleinstrollen — einmal schreien,
+     einmal sterben — liegen gleich gemeinte, aber verschieden geschriebene
+     Rollen alphabetisch untereinander, und ein Bezeichnungsfehler faellt ins
+     Auge, den man nach Zeilen sortiert nie saehe. Zahlen zaehlen als Zahlen:
+     Nummer zwei vor Nummer zehn. (Keine Beispielnamen hier — echte Rollen aus
+     einem Auftrag haben die Sperrpruefung schon einmal ausgeloest.) */
+  if(ruSortierung==="alpha"){
+    namen.sort(function(a,b){
+      return a.localeCompare(b, "de", {sensitivity:"base", numeric:true})
+          || a.localeCompare(b, "de");
+    });
+  } else {
+    namen.sort(function(a,b){ return z[b]-z[a] || a.localeCompare(b,"de",{numeric:true}); });
+  }
   var ketten=rollenKetten(namen);
 
   var reihen = namen.map(function(r){
@@ -7277,6 +7312,12 @@ function rollenUebersicht(){
 }
 
 document.getElementById("ruStart").addEventListener("click", rollenUebersicht);
+document.getElementById("ruSort").addEventListener("click", function(e){
+  var b=e.target.closest("[data-rusort]"); if(!b) return;
+  ruSortierung=b.getAttribute("data-rusort");
+  try{ localStorage.setItem("takewrite_rusort", ruSortierung); }catch(err){}
+  rollenUebersicht();
+});
 document.getElementById("feldUebersicht").addEventListener("toggle", function(){
   if(this.open) rollenUebersicht();
 });
