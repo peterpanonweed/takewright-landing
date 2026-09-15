@@ -5393,6 +5393,34 @@ document.getElementById("prRows").addEventListener("click", function(e){
 /* "Anmerkungen" steht in dieser Liste — damit wird das Feld von kopfLesen()
    abgegriffen, von kopfSchreiben() wiederhergestellt und von selbst
    mitgesichert. Ein Ort, ein Wert, kein Abgleich. */
+
+/* Absätze glätten. Titelblatt-Texte kommen oft mit harten Zeilenumbrüchen
+   an — aus einer Mail, einem Chat, einem Textblock, der bei 75 Zeichen
+   umbricht. Übernahm der Export jede Zeile als eigenen Absatz, brach Word die
+   zu lange Zeile ein zweites Mal um, und am Rand standen Einzelwörter: "des",
+   "beginnt", "gegen". So am 15.09.2026 auf einem Deckblatt.
+
+   Regel: Eine Leerzeile trennt Absätze. Innerhalb eines Absatzes werden die
+   Umbrüche zusammengezogen, wenn die Zeilen überwiegend lang sind — dann war
+   es ein Umbruch zum Lesen. Sind sie kurz, etwa eine Aufzählung, bleiben die
+   Umbrüche stehen. Zurück kommt eine Liste von Absätzen; ein Absatz kann
+   noch gewollte Umbrüche (\n) enthalten. */
+function absaetzeGlaetten(text){
+  var NL=String.fromCharCode(10);
+  var roh=String(text||"").replace(/\r\n?/g, NL);
+  return roh.split(/\n[ \t]*\n+/).map(function(abs){
+    var zeilen=abs.split(NL).map(function(z){ return z.replace(/\s+$/,""); })
+                  .filter(function(z){ return z.trim()!==""; });
+    if(zeilen.length<2) return zeilen.join(" ").trim();
+    var ohneLetzte=zeilen.slice(0,-1);
+    var lang=ohneLetzte.filter(function(z){ return z.trim().length>=50; }).length;
+    if(lang*2 >= ohneLetzte.length){
+      return zeilen.map(function(z){ return z.trim(); }).join(" ").replace(/ {2,}/g," ");
+    }
+    return zeilen.join(NL);
+  }).filter(function(a){ return a!==""; });
+}
+
 var KOPFFELDER=["Titel","Autor","Genre","Synopsis","Anmerkungen","Mail","Tel"];
 function kopfEl(n){ return document.getElementById("kf"+n); }
 function kopfLesen(){
@@ -5641,8 +5669,9 @@ function wordExport(nachRollen){
       if(!inhalt || !String(inhalt).trim()) return;
       if(seite.length) seite.push(LEERTEXT);
       seite.push(textAbsatz(titel, true), LEERTEXT);
-      String(inhalt).split(String.fromCharCode(10)).forEach(function(z){
-        seite.push(z.trim() ? textAbsatz(z.replace(/\s+$/,"")) : LEERTEXT);
+      absaetzeGlaetten(inhalt).forEach(function(abs, n){
+        if(n) seite.push(LEERTEXT);
+        abs.split(String.fromCharCode(10)).forEach(function(z){ seite.push(textAbsatz(z)); });
       });
     }
     abschnitt("SYNOPSIS", kopfDaten.Synopsis);
@@ -6178,11 +6207,14 @@ function pdfHtml(){
   h.push('<div class="z">Synchronbuch von '+esc(k.Autor||"")+'</div>');
   h.push('<div class="z">Fassung vom '+datum+'</div>');
   if(k.Genre){ h.push('<div class="ab">GENRE</div><div class="z">'+esc(k.Genre)+'</div>'); }
-  if(k.Synopsis){ h.push('<div class="ab">SYNOPSIS</div><div class="z syn">'+esc(k.Synopsis)+'</div>'); }
+  function pdfAbsaetze(t){
+    return absaetzeGlaetten(t).map(function(a){
+      return esc(a).split(String.fromCharCode(10)).join("<br>");
+    }).join("<br><br>");
+  }
+  if(k.Synopsis){ h.push('<div class="ab">SYNOPSIS</div><div class="z syn">'+pdfAbsaetze(k.Synopsis)+'</div>'); }
   if(k.Anmerkungen){
-    /* Zeilenumbrueche sichtbar halten — eine Anmerkung je Zeile. */
-    h.push('<div class="ab">ANMERKUNGEN</div><div class="z syn">'
-         + esc(k.Anmerkungen).split(String.fromCharCode(10)).join("<br>") + '</div>');
+    h.push('<div class="ab">ANMERKUNGEN</div><div class="z syn">'+pdfAbsaetze(k.Anmerkungen)+'</div>');
   }
   h.push('<div class="z" style="margin-top:9mm">'+esc(umfang)+'</div>');
   h.push('<div class="unten">');
