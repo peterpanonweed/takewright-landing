@@ -5616,24 +5616,39 @@ function wordExport(nachRollen){
       if(zeile) zeilen.push(zeile);
       return zeilen;
     }
+    /* Was ins Textfeld der Titelseite kommt, muss hineinpassen: Es hat eine
+       feste Groesse (noAutofit) und nur 26 freie Zeilen. Bis zum 15.09.2026
+       standen Synopsis und Anmerkungen mit darin — und reichte der Platz
+       nicht, wurde der ganze Block kommentarlos ausgelassen. Bei einer
+       ausfuehrlichen Synopsis war das die Regel, nicht die Ausnahme.
+       Jetzt: Genre und Umfang ins Feld, Synopsis und Anmerkungen als
+       gewoehnlicher Text direkt unter die Titelseite — ohne feste Hoehe,
+       ohne Abschneiden, so lang sie eben sind. */
     var block=[];
     if(kopfDaten.Genre){ block.push(LEER, courier("GENRE",true), courier(kopfDaten.Genre)); }
-    if(kopfDaten.Synopsis){
-      block.push(LEER, courier("SYNOPSIS",true), LEER);
-      umbrechen(kopfDaten.Synopsis, 58).forEach(function(z){ block.push(courier(z)); });
-    }
-    if(kopfDaten.Anmerkungen){
-      block.push(LEER, courier("ANMERKUNGEN",true), LEER);
-      /* Die Zeilenumbrueche der Notiz bleiben erhalten: Eine Anmerkung je Zeile
-         ist die uebliche Form, und umbrechen() allein wuerde alles zu einem
-         einzigen Absatz verkleben. */
-      kopfDaten.Anmerkungen.split(String.fromCharCode(10)).forEach(function(roh){
-        if(!roh.trim()){ block.push(LEER); return; }
-        umbrechen(roh, 58).forEach(function(z){ block.push(courier(z)); });
-      });
-    }
     block.push(LEER, courier(umfang));
 
+    function textAbsatz(text, fett){
+      var rpr='<w:rFonts w:ascii="Courier" w:hAnsi="Courier"/>'+(fett?"<w:b/>":"");
+      return '<w:p><w:pPr><w:suppressAutoHyphens/><w:spacing w:after="0"/>'
+           + '<w:rPr>'+rpr+'</w:rPr></w:pPr>'
+           + '<w:r><w:rPr>'+rpr+'</w:rPr>'
+           + '<w:t xml:space="preserve">'+xmlEsc(text)+'</w:t></w:r></w:p>';
+    }
+    var LEERTEXT='<w:p><w:pPr><w:spacing w:after="0"/></w:pPr></w:p>';
+    var seite=[];
+    function abschnitt(titel, inhalt){
+      if(!inhalt || !String(inhalt).trim()) return;
+      if(seite.length) seite.push(LEERTEXT);
+      seite.push(textAbsatz(titel, true), LEERTEXT);
+      String(inhalt).split(String.fromCharCode(10)).forEach(function(z){
+        seite.push(z.trim() ? textAbsatz(z.replace(/\s+$/,"")) : LEERTEXT);
+      });
+    }
+    abschnitt("SYNOPSIS", kopfDaten.Synopsis);
+    abschnitt("ANMERKUNGEN", kopfDaten.Anmerkungen);
+
+    var blockAufSeite=false;
     if(block.length){
       var teileTxt=[], rest=kopf;
       while(true){
@@ -5656,6 +5671,10 @@ function wordExport(nachRollen){
             inhalt = inhalt.slice(0, stellen[frei[0]][0])
                    + block.join("")
                    + inhalt.slice(stellen[frei[block.length-1]][1]);
+          } else if(!blockAufSeite){
+            /* Nie wieder stillschweigend weglassen */
+            blockAufSeite=true;
+            seite.unshift.apply(seite, block);
           }
         }
         teileTxt.push(rest.slice(0, a+15)); teileTxt.push(inhalt);
@@ -5667,7 +5686,10 @@ function wordExport(nachRollen){
     /* Tabellenzeilen ersetzen. Die Stellen neu suchen — der Kopf hat sich
        durch das Fuellen in der Laenge geaendert. */
     var t2=kopf.indexOf("<w:tbl>"), t3=kopf.indexOf("</w:tbl>")+8;
-    neuerKoerper = kopf.slice(0,t2) + tabelleBauen(zeilen, true) + kopf.slice(t3);
+    var vorTabelle = seite.length
+      ? seite.join("") + '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
+      : "";
+    neuerKoerper = kopf.slice(0,t2) + vorTabelle + tabelleBauen(zeilen, true) + kopf.slice(t3);
   }
 
   /* ---- Paket schnueren: alle Bestandteile der Vorlage, nur document.xml neu ---- */
