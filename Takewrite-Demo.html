@@ -238,6 +238,15 @@ header.cover{position:sticky;top:0;z-index:60;background:var(--ground);
   .rureihe{grid-template-columns:10px 1fr 40px;row-gap:2px}
   .rubar,.ruzeit{display:none}
 }
+/* Das Ziel von „Hin": kraeftig umrandet, einmal aufleuchtend, und der
+   gewaehlte Eintrag in der Fundliste ist ebenfalls markiert. */
+.trrow.pruefziel{outline:3px solid var(--warm);outline-offset:-3px;position:relative;z-index:2}
+.trrow.pruefblitz{animation:pruefblitz 1.4s ease-out}
+@keyframes pruefblitz{0%{background:var(--warm-soft);box-shadow:0 0 0 6px var(--warm)}
+  60%{box-shadow:0 0 0 2px var(--warm)}100%{box-shadow:none}}
+.trrow.pruefziel [data-feld="text"]::selection,
+.trrow.pruefziel [data-feld="text"] *::selection{background:var(--warm);color:#fff}
+.pruefzeile.aktiv{background:var(--warm-soft);box-shadow:inset 3px 0 0 var(--warm)}
 .rpblock{border-top:1px solid var(--rule-soft);padding:9px 0}
 .rpblock:first-child{border-top:0;padding-top:0}
 .rpblock>b{display:block;font-size:11.5px;margin-bottom:5px;color:var(--ink)}
@@ -5257,6 +5266,66 @@ function pruefZeigen(){
   }).join("");
 }
 
+
+/* „Hin" zeigt, wohin. Bis zum 15.09.2026 spulte der Knopf nur den Film und
+   rollte die Zeile irgendwo in den sichtbaren Bereich — welche der Zeilen auf
+   dem Schirm gemeint war und wo darin der Fehler steckt, musste man suchen.
+   Jetzt leuchtet die Zeile auf und bleibt umrandet, und im Text ist genau die
+   beanstandete Stelle ausgewaehlt: Man sieht sie sofort und kann sie direkt
+   ueberschreiben. */
+function pruefSpanne(alt, neu){
+  /* Die abweichende Stelle im Klartext der alten Fassung: gemeinsamer Anfang
+     und gemeinsames Ende abziehen, was bleibt, ist der Fehler. */
+  function klar(h){ var d=document.createElement("div"); d.innerHTML=h||""; return d.textContent; }
+  var x=klar(alt), y=klar(neu), v=0, m=Math.min(x.length,y.length);
+  while(v<m && x.charAt(v)===y.charAt(v)) v++;
+  var h=0;
+  while(h<m-v && x.charAt(x.length-1-h)===y.charAt(y.length-1-h)) h++;
+  var von=v, bis=x.length-h;
+  /* Fehlt etwas (etwa ein Leerzeichen), ist die Spanne leer — dann die beiden
+     Zeichen links und rechts der Luecke auswaehlen, sonst saehe man nichts. */
+  if(bis<=von){ von=Math.max(0,von-1); bis=Math.min(x.length,von+2); }
+  return {von:von, bis:bis};
+}
+
+function textBereichWaehlen(feld, von, bis){
+  var gehe=document.createTreeWalker(feld, NodeFilter.SHOW_TEXT, null), n, pos=0,
+      r=document.createRange(), start=false;
+  while((n=gehe.nextNode())){
+    var l=n.nodeValue.length;
+    if(!start && von<=pos+l){ r.setStart(n, Math.max(0,von-pos)); start=true; }
+    if(start && bis<=pos+l){ r.setEnd(n, Math.max(0,bis-pos)); break; }
+    pos+=l;
+  }
+  if(!start) return;
+  var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+}
+
+function pruefHin(n){
+  var f=pruefFunde[n]; if(!f) return;
+  vid.pause(); vid.currentTime=zeitVon(cues[f.i]);
+
+  var alt=trList.querySelector(".trrow.pruefziel");
+  if(alt) alt.classList.remove("pruefziel","pruefblitz");
+  var el=zeileEl(f.i); if(!el) return;
+  zeileInSicht(el, true);
+  el.classList.add("pruefziel");
+  void el.offsetWidth;                 /* Animation neu anstossen */
+  el.classList.add("pruefblitz");
+
+  var feld=el.querySelector('[data-feld="text"]');
+  if(feld){
+    var sp=pruefSpanne(f.alt, f.neu);
+    feld.focus({preventScroll:true});
+    textBereichWaehlen(feld, sp.von, sp.bis);
+  }
+
+  var box=document.getElementById("prRows");
+  [].forEach.call(box.querySelectorAll(".pruefzeile.aktiv"), function(z){ z.classList.remove("aktiv"); });
+  var eintrag=box.querySelectorAll(".pruefzeile")[n];
+  if(eintrag) eintrag.classList.add("aktiv");
+}
+
 function pruefUebernehmen(n){
   var f=pruefFunde[n]; if(!f) return;
   var c=cues[f.i];
@@ -5264,6 +5333,7 @@ function pruefUebernehmen(n){
   c.text=f.neu; c.textGeaendert=true;
   var el=zeileEl(f.i);
   if(el) el.querySelector('[data-feld="text"]').innerHTML=nurKursiv(c.text);
+  if(el) el.classList.remove("pruefziel","pruefblitz");
   pruefFunde.splice(n,1);
   pruefZeigen(); sichern();
 }
@@ -5305,9 +5375,7 @@ document.getElementById("prAlle").addEventListener("click", function(){
 document.getElementById("prRows").addEventListener("click", function(e){
   var go=e.target.getAttribute("data-prgo"), ok=e.target.getAttribute("data-prok");
   if(go!==null&&go!==undefined){
-    var f=pruefFunde[+go];
-    if(f){ vid.pause(); vid.currentTime=zeitVon(cues[f.i]);
-           var el=zeileEl(f.i); if(el) zeileInSicht(el,true); }
+    pruefHin(+go);
   }
   if(ok!==null&&ok!==undefined) pruefUebernehmen(+ok);
 });
