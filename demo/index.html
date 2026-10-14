@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Takewrite 1.3 · 2026-09-08 -->
+<!-- Takewrite 1.4 · 2026-10-14 -->
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -1030,7 +1030,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <div class="marke">
     <span class="wortmarke" role="img" aria-label="Takewrite"></span>
     <span class="claim">Synchronbuch · einfach · schreiben</span>
-    <span class="ver" style="color:var(--warm);border-color:var(--warm)" title="Demo-Fassung — auf 75 Takes begrenzt">1.3 · DEMO — 75 Takes</span>
+    <span class="ver" style="color:var(--warm);border-color:var(--warm)" title="Demo-Fassung — auf 75 Takes begrenzt">1.4 · DEMO — 75 Takes</span>
     <span class="projekt" id="projektName" style="display:none"></span>
     <span class="demohinweis">Zum Ausprobieren &mdash; hier sichert nichts von allein. Der gr&uuml;ne Knopf legt deinen Stand als Datei ab, <b>Stand einlesen</b> holt ihn zur&uuml;ck.</span>
     <button class="lizchip" id="lizChip" style="display:none" type="button"></button>
@@ -1067,6 +1067,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <b>&#128190;</b> Sichern
     </button>
     <button class="mini" id="punktListe" title="Frühere Sicherungspunkte ansehen und zurückholen">Sicherungen…</button>
+    <button class="mini" id="beenden" title="Takewrite sichern und schließen">Beenden</button>
   </div>
 </header>
 
@@ -7393,6 +7394,37 @@ document.getElementById("rpRows").addEventListener("click", function(e){
       if(!cues[i].geloescht && (!r || /^\?+$/.test(r))){ scharfMachen(i); return; }
     }
   }
+});
+
+/* ---------------------------------------------------------- Lebenszeichen ---
+   Seit Fassung 1.4 laeuft der Dienst ohne Fenster. Damit fehlt der Ausschalter,
+   den das Fenster war — und ein unsichtbarer Dienst, den niemand beenden kann,
+   waere schlimmer als ein sichtbarer. Die Seite meldet sich deshalb regelmaessig;
+   bleibt sie weg, schaltet er sich nach zwanzig Minuten selbst ab. */
+function puls(){ try{ fetch("puls", {cache:"no-store"}); }catch(e){} }
+puls(); setInterval(puls, 30000);
+window.addEventListener("focus", puls);
+
+document.getElementById("beenden").addEventListener("click", function(){
+  if(!window.confirm("Takewrite beenden?
+
+Der Arbeitsstand wird vorher gesichert.")) return;
+  try{ sichern(); }catch(e){}
+  /* Erst sichern lassen, dann abschalten — sonst kaeme die letzte Aenderung
+     nicht mehr an. */
+  setTimeout(function(){
+    fetch("beenden", {cache:"no-store"}).catch(function(){}).then(function(){
+      document.documentElement.innerHTML =
+        '<head><meta charset="utf-8"><title>Takewrite</title></head>'
+      + '<body style="margin:0;height:100vh;display:flex;align-items:center;'
+      + 'justify-content:center;background:#0D1116;color:#E2E7EC;'
+      + 'font-family:Segoe UI,Roboto,Arial,sans-serif;text-align:center">'
+      + '<div><div style="font-family:Iowan Old Style,Palatino,Georgia,serif;'
+      + 'font-size:40px;color:#FBFCFD">take<b style="color:#72BBC8">write</b></div>'
+      + '<p style="color:#79838D;font-size:13px;margin-top:18px">'
+      + 'Gesichert und beendet. Dieses Fenster kann geschlossen werden.</p></div></body>';
+    });
+  }, 700);
 });
 
 undoHolen();
