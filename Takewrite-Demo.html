@@ -7019,12 +7019,45 @@ function lizenzKarte(){
          + "Die gehört in denselben Ordner wie „Takewrite starten.bat“. "
          + "Darin steht keine Seriennummer, nur ihre Prüfsumme.</p>");
   }
-  t.push("<div class=\"reihe\"><button class=\"mini\" id=\"lizZu\">Schließen</button></div>");
+  /* Der zweite Weg herein: ein Gutschein. Kein Hin und Her per Mail, sondern
+     ein Code, der eingefügt wird — und der sich beim Einlösen an diesen
+     Rechner bindet. Das Feld steht dort, wo ohnehin sucht, wer freischalten
+     will. */
+  t.push("<p class=\"kleiner\" style=\"margin-top:14px\"><b>Gutschein einlösen</b>"
+       + " — einen Code, der mit <b>TWG</b> beginnt, hier einfügen:</p>");
+  t.push("<textarea id=\"lizGut\" rows=\"2\" placeholder=\"TWG…\" style=\"width:100%;"
+       + "box-sizing:border-box;font-family:var(--font-mono);font-size:10.5px;"
+       + "background:var(--surface-2);color:var(--ink);border:1px solid var(--rule);"
+       + "border-radius:3px;padding:8px\"></textarea>");
+  t.push("<div class=\"reihe\"><button class=\"mini\" id=\"lizGutAb\">Einlösen</button>"
+       + "<span id=\"lizGutMeld\" class=\"kleiner\"></span>"
+       + "<button class=\"mini\" id=\"lizZu\">Schließen</button></div>");
   karte.innerHTML = t.join("");
   feld.classList.add("auf");
 
   var zu = document.getElementById("lizZu");
   if(zu) zu.addEventListener("click", function(){ feld.classList.remove("auf"); });
+  var gab = document.getElementById("lizGutAb");
+  if(gab) gab.addEventListener("click", function(){
+    var m = document.getElementById("lizGutMeld");
+    var c = (document.getElementById("lizGut").value || "").trim();
+    if(!c){ m.textContent = "Bitte den Code einfügen."; return; }
+    m.textContent = "Prüfe …";
+    fetch("gutschein", {method:"POST", headers:{"Content-Type":"application/json"},
+                        body: JSON.stringify({code:c})})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d && d.ok){
+          m.textContent = "Freigeschaltet für " + d.name + ", bis " + d.bis + ".";
+          lizenzHolen();
+          toast("Gutschein eingelöst — gültig bis " + d.bis);
+        } else {
+          m.textContent = (d && d.grund) ? d.grund : "Hat nicht geklappt.";
+        }
+      })
+      .catch(function(){ m.textContent = "Keine Verbindung zum Dienst."; });
+  });
+
   var kop = document.getElementById("lizKopie");
   if(kop) kop.addEventListener("click", function(){
     var s = LIZ.anforderung || "";
