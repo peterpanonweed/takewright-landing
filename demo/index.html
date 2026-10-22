@@ -1103,6 +1103,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
                Film dort, laedt die App ihn selbst; liegen mehrere, steht die
                Wahl hier — ein Klick statt eines Dateidialogs. -->
           <div class="filmliste" id="filmListe" style="display:none"></div>
+          <!-- Steht nur da, wenn ein Film sich nicht öffnen liess. -->
+          <div id="filmFehler" style="display:none;max-width:40em;margin:0 0 15px 0;padding:13px 16px;border-left:3px solid #c9693f;background:rgba(201,105,63,.10);text-align:left;font-size:13px;line-height:1.7;letter-spacing:normal;text-transform:none"></div>
           <strong>Filmdatei hierher ziehen</strong>
           <span>oder</span>
           <button class="pick" id="pickbtn">Datei wählen</button>
@@ -1507,7 +1509,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 <p class="colophon">Takewrite · <a href="https://takewrite.de" target="_blank" rel="noopener">takewrite.de</a> · made with <span class="herz">&#10084;&#65039;</span> by <a href="https://peterpanonweed.github.io/adamdev/" target="_blank" rel="noopener">adamdev</a></p>
 </div>
 
-<input type="file" id="file" accept="video/*,.mkv,.mov,.mxf" style="display:none">
+<!-- Angeboten wird nur, was der Browser auch abspielt. .mkv und .mxf
+     standen hier und endeten verlaesslich im schwarzen Bild. -->
+<input type="file" id="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.m4v,.mov,.webm" style="display:none">
 <div class="toast" id="toast"></div>
 <div class="toast frage" id="frage"></div>
 <div class="lizfeld" id="lizFeld"><div class="lizkarte" id="lizKarte"></div></div>
@@ -1701,16 +1705,74 @@ function loadFile(f){
   var tf=document.getElementById("kfTitel");
   if(tf && !tf.value.trim()){ tf.value=f.name.replace(/\.[^.]+$/,""); sichernGebremst(); }
   drop.classList.add("hide");
+  klageWeg();
   vid.load();
   /* Den Server bitten, diese Datei auf der Platte wiederzufinden. Der Browser
      gibt ihren Pfad nicht heraus — ohne diesen Umweg waere der Film beim
-     naechsten Oeffnen weg, und mit ihm Stelle und Zusammenhang. */
-  fetch("film/merken", {method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({name:f.name, groesse:f.size})})
-    .then(function(r){ return r.json(); })
-    .then(function(d){ if(d && d.ok) toast("Film gemerkt — beim nächsten Mal ist er gleich da"); })
-    .catch(function(){ /* ohne Server bleibt es beim Waehlen von Hand */ });
+     naechsten Oeffnen weg, und mit ihm Stelle und Zusammenhang.
+
+     Gemerkt wird aber erst, wenn der Film auch wirklich laeuft. Sonst traegt
+     sich eine Datei ein, die der Browser nicht abspielen kann, und begruesst
+     einen von da an bei jedem Start mit derselben Fehlermeldung. */
+  vid.addEventListener("loadeddata", function merkeJetzt(){
+    vid.removeEventListener("loadeddata", merkeJetzt);
+    fetch("film/merken", {method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({name:f.name, groesse:f.size})})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if(d && d.ok) toast("Film gemerkt — beim nächsten Mal ist er gleich da"); })
+      .catch(function(){ /* ohne Server bleibt es beim Waehlen von Hand */ });
+  });
 }
+/* Welche Formate der eingebaute Abspieler kann, entscheidet der Browser und
+   nicht Takewrite: H.264 in MP4 oder MOV, dazu WebM. ProRes, DNxHD, MXF,
+   HEVC und die meisten MKV-Spuren bleiben ihm fremd. */
+var SPIELBAR = /\.(mp4|m4v|mov|webm)$/i;
+
+function klageWeg(){
+  var k=document.getElementById("filmFehler");
+  if(k) k.style.display="none";
+}
+
+/* Vorher endete ein Film, den der Browser nicht entschluesseln kann, in einem
+   schwarzen Bild ohne ein Wort — die unfreundlichste aller Antworten: Man
+   weiss nicht einmal, ob man selbst etwas falsch gemacht hat. */
+var raeumtAuf=false;
+function filmFehlschlag(){
+  if(raeumtAuf) return;
+  var endung=(String(fileName||"").match(/\.[^.]+$/)||[""])[0].toUpperCase();
+  var lesefehler = vid.error && vid.error.code===2;
+  raeumtAuf=true;
+  if(vid.src && vid.src.slice(0,5)==="blob:") URL.revokeObjectURL(vid.src);
+  vid.removeAttribute("src");
+  try{ vid.load(); }catch(e){}
+  raeumtAuf=false;
+  fileName="";
+  var fn=document.getElementById("filename"); if(fn) fn.textContent="";
+  /* Eine Wahl, die nicht aufgegangen ist, darf sich nicht festsetzen: Sonst
+     laedt der naechste Start denselben unspielbaren Film und die Auswahl der
+     uebrigen erscheint nie wieder. */
+  try{ localStorage.removeItem(FILMWAHL); }catch(e){}
+  drop.classList.remove("hide");
+  var k=document.getElementById("filmFehler");
+  if(!k) return;
+  k.innerHTML = lesefehler
+    ? "<b>Die Datei ließ sich nicht lesen" + (endung ? " (" + endung + ")" : "") + ".</b> "
+      + "Liegt sie auf einem Netzlaufwerk oder einer Platte, die zwischendurch "
+      + "abgemeldet wurde? Kopiere sie einmal auf die lokale Platte."
+    : "<b>Diesen Film kann der Browser nicht öffnen"
+      + (endung ? " (" + endung + ")" : "") + ".</b> "
+      + "Takewrite benutzt den Abspieler des Browsers, und der versteht nur "
+      + "<b>H.264</b> mit AAC-Ton &mdash; also eine gewöhnliche MP4, wie sie aus "
+      + "jedem Studio-Mix fällt. ProRes, DNxHD, MXF, HEVC und die meisten "
+      + "MKV-Dateien kann er nicht, so gut sie auch sein mögen. "
+      + "Bitte eine H.264-Fassung anfordern oder umwandeln.";
+  k.style.display="block";
+}
+vid.addEventListener("error", function(){
+  if(raeumtAuf || !vid.getAttribute("src")) return;   /* nicht beim Aufraeumen */
+  filmFehlschlag();
+});
+
 document.getElementById("pickbtn").addEventListener("click", function(){ fileInput.click(); });
 fileInput.addEventListener("change", function(e){ loadFile(e.target.files[0]); });
 ["dragenter","dragover"].forEach(function(ev){
@@ -6554,6 +6616,7 @@ function filmAusOrdner(name, adresse){
      Gewinn: Bei zwei Fassungen im Ordner will niemand jedes Mal neu waehlen. */
   try{ localStorage.setItem(FILMWAHL, name); }catch(e){}
   drop.classList.add("hide");
+  klageWeg();
   vid.load();
 }
 function filmeAnbieten(filme){
@@ -6563,8 +6626,11 @@ function filmeAnbieten(filme){
         var g = f.groesse >= 1073741824
           ? (f.groesse/1073741824).toFixed(1).replace(".",",") + " GB"
           : Math.max(1, Math.round(f.groesse/1048576)) + " MB";
+        /* Lieber vorher ein Hinweis als hinterher ein schwarzes Bild. */
+        var warn = SPIELBAR.test(f.name) ? ''
+          : ' <em style="font-style:normal;color:#c9693f">Format nicht abspielbar</em>';
         return '<button type="button" class="flknopf" data-film="'+esc(f.name)+'">'
-          + esc(f.name) + ' <i>' + g + '</i></button>';
+          + esc(f.name) + ' <i>' + g + '</i>' + warn + '</button>';
       }).join("");
   box.style.display="";
 }
@@ -7439,9 +7505,7 @@ puls(); setInterval(puls, 30000);
 window.addEventListener("focus", puls);
 
 document.getElementById("beenden").addEventListener("click", function(){
-  if(!window.confirm("Takewrite beenden?
-
-Der Arbeitsstand wird vorher gesichert.")) return;
+  if(!window.confirm("Takewrite beenden?\n\nDer Arbeitsstand wird vorher gesichert.")) return;
   try{ sichern(); }catch(e){}
   /* Erst sichern lassen, dann abschalten — sonst kaeme die letzte Aenderung
      nicht mehr an. */
