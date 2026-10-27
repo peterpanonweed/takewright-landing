@@ -52,6 +52,10 @@ code{font-family:var(--mono);font-size:14.5px;background:var(--surface-2);paddin
   transition:filter .15s}
 .knopf:hover{filter:brightness(1.14)}
 .knopf b{font-size:19px;line-height:1}
+/* Der zweite Knopf steht gleichberechtigt da, nimmt aber nicht dieselbe
+   Fläche ein: Wer Windows hat, soll nicht raten muessen, welcher gemeint ist. */
+.knopf.zweit{background:transparent;color:var(--accent);margin-top:20px}
+.knopf.zweit:hover{background:var(--accent);color:var(--ground)}
 .kleingedruckt{font-family:var(--mono);font-size:11px;color:var(--ink-3);
   letter-spacing:.04em;margin:14px 0 0}
 .merken{font-family:var(--ui);font-size:13.5px;color:var(--ink-2);
@@ -96,8 +100,18 @@ gleich per E-Mail. Hier ist deine Fassung von Takewrite.</p>
   <p>Ein Paket, in dem alles steckt: das Programm, der Starter und die Anleitung.
     Keine Installation, kein Konto, keine Anmeldung. Freischalten musst du
     einmal &mdash; das dauert eine Mail und steht unten.</p>
-  <a class="knopf" href="../paket/Takewrite.zip" download><b>&#8595;</b> Takewrite herunterladen</a>
-  <p class="kleingedruckt">ZIP-Paket &middot; 11,7&nbsp;MB &middot; Windows &middot; Python ist enthalten, es muss nichts installiert werden<br><b>Fassung 1.4.1 vom 22.10.2026</b> &middot; Verbesserungen kommen hierher &mdash; im ersten Jahr sind sie im Preis enthalten, hol sie dir einfach von dieser Seite.</p>
+  <a class="knopf" href="../paket/Takewrite.zip" download><b>&#8595;</b> F&uuml;r Windows</a>
+  <p class="kleingedruckt">ZIP-Paket &middot; 12&nbsp;MB &middot; Windows 10 und 11 &middot; Python ist enthalten, es muss nichts installiert werden.</p>
+  <a class="knopf zweit" href="../paket/Takewrite-Mac.zip" download><b>&#8595;</b> F&uuml;r Mac</a>
+  <p class="kleingedruckt">ZIP-Paket &middot; 0,3&nbsp;MB &middot; macOS 11 und neuer, Intel und Apple&nbsp;Silicon.
+    Beim ersten Start sind zwei Schritte mehr n&ouml;tig als unter Windows: Apples
+    Sicherheitsabfrage einmal best&auml;tigen und, falls noch nicht vorhanden,
+    Apples kostenlose Command&nbsp;Line&nbsp;Tools nachinstallieren. Beides steht
+    Schritt f&uuml;r Schritt im Paket &mdash; <b>ZUERST LESEN.txt</b> und
+    <b>README.html</b>. Kommst du nicht weiter, schreib mir, ich f&uuml;hre dich durch.</p>
+  <p class="kleingedruckt">Du bekommst beide Pakete &mdash; es ist dasselbe Programm, nur unterschiedlich
+    verpackt. Nimm das, was zu deinem Rechner passt; die Lizenz gilt f&uuml;r beide.<br>
+    <b>Fassung 1.4.1 vom 22.10.2026</b> &middot; Verbesserungen kommen hierher &mdash; im ersten Jahr sind sie im Preis enthalten, hol sie dir einfach von dieser Seite.</p>
   <p class="merken"><b>Diese Seite als Lesezeichen sichern.</b> Die Adresse steht nicht im Zahlungsbeleg &mdash; sie f&uuml;hrt nur von hier aus zum Download. Verloren gegangen? Eine Mail gen&uuml;gt, dann kommt sie umgehend zur&uuml;ck.</p>
 </div>
 

@@ -52,6 +52,10 @@ code{font-family:var(--mono);font-size:14.5px;background:var(--surface-2);paddin
   transition:filter .15s}
 .knopf:hover{filter:brightness(1.14)}
 .knopf b{font-size:19px;line-height:1}
+/* Der zweite Knopf steht gleichberechtigt da, nimmt aber nicht dieselbe
+   Flaeche ein: Wer Windows hat, soll nicht raten muessen, welcher gemeint ist. */
+.knopf.zweit{background:transparent;color:var(--accent);margin-top:20px}
+.knopf.zweit:hover{background:var(--accent);color:var(--ground)}
 .kleingedruckt{font-family:var(--mono);font-size:11px;color:var(--ink-3);
   letter-spacing:.04em;margin:14px 0 0}
 .merken{font-family:var(--ui);font-size:13.5px;color:var(--ink-2);
@@ -99,8 +103,14 @@ k&uuml;ndigen</b> &mdash; nach vierzehn Tagen h&ouml;rt es einfach auf.</p>
   <p>Ein Paket, in dem alles steckt: das Programm, der Starter und die Anleitung.
     Keine Installation, kein Konto, keine Anmeldung. Freischalten musst du
     einmal &mdash; das dauert eine Mail und steht unten.</p>
-  <a class="knopf" href="../paket/Takewrite.zip" download><b>&#8595;</b> Takewrite herunterladen</a>
-  <p class="kleingedruckt">ZIP-Paket &middot; 11,7&nbsp;MB &middot; Windows &middot; Python ist enthalten, es muss nichts installiert werden<br><b>Fassung 1.4.1 vom 22.10.2026</b> &middot; Verbesserungen kommen hierher &mdash; im ersten Jahr sind sie im Preis enthalten, hol sie dir einfach von dieser Seite.</p>
+  <a class="knopf" href="../paket/Takewrite.zip" download><b>&#8595;</b> F&uuml;r Windows</a>
+  <p class="kleingedruckt">ZIP-Paket &middot; 12&nbsp;MB &middot; Windows 10 und 11 &middot; Python ist enthalten, es muss nichts installiert werden.</p>
+  <a class="knopf zweit" href="../paket/Takewrite-Mac.zip" download><b>&#8595;</b> F&uuml;r Mac</a>
+  <p class="kleingedruckt">ZIP-Paket &middot; 0,3&nbsp;MB &middot; macOS 11 und neuer. Beim ersten Start einmal Apples
+    Sicherheitsabfrage best&auml;tigen und, falls noch nicht vorhanden, Apples kostenlose
+    Command&nbsp;Line&nbsp;Tools nachinstallieren &mdash; beides steht im Paket in
+    <b>ZUERST LESEN.txt</b>.</p>
+  <p class="kleingedruckt"><b>Fassung 1.4.1 vom 22.10.2026</b> &middot; Verbesserungen kommen hierher &mdash; im ersten Jahr sind sie im Preis enthalten, hol sie dir einfach von dieser Seite.</p>
   <p class="merken"><b>Diese Seite als Lesezeichen sichern.</b> Sie ist nicht verlinkt und nicht zu finden &mdash; nur wer die Adresse hat, kommt her. Verloren gegangen? Eine Mail gen&uuml;gt.</p>
 </div>
 
