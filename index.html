@@ -598,7 +598,9 @@ footer{padding:26px 0 46px;font-family:var(--mono);font-size:10.5px;letter-spaci
         <p class="wofuer">Für Synchronautoren und Rohübersetzer</p>
         <ul>
           <li>Ein Arbeitsplatz, unbegrenzt viele Filme</li>
-          <li>Browserbasiert &mdash; wir empfehlen Chrome</li>
+          <li>Für <b>Windows&nbsp;10 und 11</b> &mdash; Mac-Fassung dabei,
+              <a href="#mac">mit einer Einschränkung</a></li>
+          <li>Läuft im Browser &mdash; wir empfehlen Chrome</li>
           <li>Verlängerung 189 &euro; netto im Jahr — auch nach einer Pause</li>
           <li>Alle Aktualisierungen inklusive</li>
           <li>Ausgabe in eure eigene Word-Vorlage</li>
@@ -654,15 +656,20 @@ footer{padding:26px 0 46px;font-family:var(--mono);font-size:10.5px;letter-spaci
           Textquelle als SRT. Ausgabe als Word-Dokument in eurer Vorlage, als Separierung
           nach Rollen und als PDF — dazu JSON für alles Weitere.</p>
       </details>
-      <details>
+      <details id="mac">
         <summary>Läuft es auf dem Mac?</summary>
-        <p>Ja. Nach dem Kauf bekommst du <b>beide Pakete</b> — für Windows und für
-          den Mac; deine Lizenz gilt für beide.</p>
-        <p>Eines solltest du wissen: Beim ersten Start <b>blockiert macOS das
-          Programm</b> — Takewrite ist nicht von Apple signiert. Du gibst es
-          einmal frei (Systemeinstellungen → Datenschutz &amp; Sicherheit →
-          <i>Trotzdem öffnen</i>), danach genügt der Doppelklick. Die Schritte
-          liegen dem Paket bei.</p>
+        <p><b>Takewrite ist in erster Linie ein Windows-Programm.</b> Dort packst
+          du aus, klickst doppelt, und es läuft — Python und alles Weitere sind
+          im Paket.</p>
+        <p>Eine <b>Mac-Fassung ist dabei</b>, ohne Aufpreis, dieselbe Lizenz. Sie
+          hat eine Einschränkung, und die sage ich lieber vorher: Beim ersten
+          Start blockiert macOS das Programm, weil es nicht von Apple signiert
+          ist. Du gibst es einmal frei — Systemeinstellungen → Datenschutz &amp;
+          Sicherheit → <i>Trotzdem öffnen</i> —, danach genügt der Doppelklick
+          wie überall sonst. Eine Anleitung dafür liegt im Paket.</p>
+        <p>Wenn dir das zu umständlich ist, nimm die Windows-Fassung oder sag mir
+          vorher Bescheid. Die <b>Demo</b> läuft ohnehin auf jedem Rechner —
+          probier sie ruhig erst dort aus.</p>
       </details>
     </div>
   </div>
@@ -719,6 +726,20 @@ footer{padding:26px 0 46px;font-family:var(--mono);font-size:10.5px;letter-spaci
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
+})();
+</script>
+
+<script>
+/* Ein Link auf eine zugeklappte Frage landet sonst auf einer geschlossenen
+   Zeile: Man springt hin und sieht die Antwort trotzdem nicht. */
+(function(){
+  function aufklappen(){
+    if(!location.hash) return;
+    var z = document.querySelector(location.hash);
+    if(z && z.tagName === "DETAILS"){ z.open = true; z.scrollIntoView(); }
+  }
+  window.addEventListener("hashchange", aufklappen);
+  aufklappen();
 })();
 </script>
 
